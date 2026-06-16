@@ -53,7 +53,11 @@ const handler = httpServerHandler(server);
 
 export default {
   async fetch(request, env, ctx) {
+    // CRITICAL: Attach both env AND ctx to the raw request object 
+    // so it can be extracted inside the routes via cloudflare:node bridges
     request.env = env; 
+    request.ctx = ctx;
+    
     return handler.fetch(request, env, ctx);
   }
 };
