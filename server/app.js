@@ -11,19 +11,10 @@ import emailRouter from './routes/email.js';
 
 const app = express();
 
-// Middleware
+// Standard App Middleware
 app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
-
-// 1. CLOUDFLARE BINDINGS INTERCEPT MIDDLEWARE
-// This safely grabs the cloud/local environment and saves it to req.db
-app.use((req, res, next) => {
-  // Cloudflare injects the worker context into req.canvas or req.raw
-  // eslint-disable-next-line no-unused-vars
-  const cfEnv = req.cloudflare?.env || req.raw?.context?.env || globalThis;
-  next();
-});
 
 // Link your sub-routes
 app.use("/", dbRouter);
@@ -31,13 +22,24 @@ app.use("/bookings", bookingsRouter);
 app.use("/users", usersRouter); 
 app.use("/email", emailRouter); 
 
-app.get("/", (req, res) => {
+app.get("/home", (req, res) => {
   res.send("hello,world");
 });
 
-// 2. OFFICIAL CLOUDFLARE LIFECYCLE INITIALIZATION
-// This maps your routing layout to Cloudflare's internal proxy table
-app.listen(3000); 
+// START EXPRESS INTERNAL ROUTER LOOP
+const server = app.listen(3000); 
 
-// 3. EXPORT USING THE EXACT PORT CONFIGURATION OBJECT
-export default httpServerHandler({ port: 3000 });
+// OFFICIAL CLOUDFLARE CONFIGURATION EXPORT
+export default httpServerHandler(server, {
+  async fetch(request, env, ctx) {
+    // Intercept every single web request globally 
+    // and attach your D1 database configuration to Express
+    app.use((req, res, next) => {
+      req.db = env.DB; 
+      next();
+    });
+
+    // Pass execution down to the underlying handler pipeline
+    return httpServerHandler(server).fetch(request, env, ctx);
+  }
+});

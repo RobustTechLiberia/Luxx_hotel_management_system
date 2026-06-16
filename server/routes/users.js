@@ -4,9 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
-const JWT_SECRET = "supersecretkey"; // Define fallback globally or via wrangler configuration
-
-// manages user credentials
+const JWT_SECRET = "supersecretkey";
 
 // sign up route
 router.post("/signup", async (req, res) => {
@@ -17,28 +15,18 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // CRITICAL FIX: Robust fallback line to dynamically grab your D1 Database instance
-    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
+    // Fetch the cleanly bound D1 instance attached via app.js middleware
+    const db = req.db;
 
     if (!db) {
-      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
+      throw new Error("Cloudflare D1 database reference failed to inject via core handler middleware.");
     }
-
-    // ensure table exists (SQLite compatible format)
-    const createTableSql = `CREATE TABLE IF NOT EXISTS user_credentials (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT NOT NULL,
-      email TEXT NOT NULL UNIQUE,
-      password TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );`;
-
-    await db.prepare(createTableSql).run();
 
     // hash password
     const salt = bcrypt.genSaltSync(10);
     const hashed = bcrypt.hashSync(password, salt);
 
+    // Insert directly since table was already built via Wrangler command
     const insertSql =
       "INSERT INTO user_credentials (username, email, password) VALUES (?, ?, ?)";
 
@@ -53,7 +41,7 @@ router.post("/signup", async (req, res) => {
       message: "Account created",
       token,
       user: {
-        id: result.meta.last_row_id || null, // D1 uses last_row_id instead of insertId
+        id: result.meta.last_row_id || null,
         username,
         email,
       },
@@ -61,11 +49,10 @@ router.post("/signup", async (req, res) => {
 
   } catch (err) {
     console.error("D1 error (signup):", err);
-    // SQLite checks for unique constraint violations with constraint message checks
     if (err.message && err.message.includes("UNIQUE constraint failed")) {
       return res.status(409).json({ error: "Email already registered" });
     }
-    return res.status(500).json({ error: "Database error" });
+    return res.status(500).json({ error: "Database error", details: err.message });
   }
 });
 
@@ -78,16 +65,13 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ error: "Missing email or password" });
     }
 
-    // CRITICAL FIX: Robust fallback line to dynamically grab your D1 Database instance
-    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
+    const db = req.db;
 
     if (!db) {
-      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
+      throw new Error("Cloudflare D1 database reference failed to inject via core handler middleware.");
     }
 
     const sql = "SELECT * FROM user_credentials WHERE email = ? LIMIT 1";
-    
-    // Fetch a single row using D1 first() syntax
     const user = await db.prepare(sql).bind(email).first();
 
     if (!user) {
@@ -95,9 +79,8 @@ router.post("/login", async (req, res) => {
     }
 
     const hashed = user.password;
-
-    // Compare password
     let passwordMatches = false;
+    
     try {
       passwordMatches = bcrypt.compareSync(password, hashed);
     } catch (err) {
@@ -105,7 +88,6 @@ router.post("/login", async (req, res) => {
       passwordMatches = false;
     }
 
-    // fallback if password stored as plain text
     if (!passwordMatches && hashed === password) {
       passwordMatches = true;
     }
@@ -133,7 +115,7 @@ router.post("/login", async (req, res) => {
 
   } catch (err) {
     console.error("D1 error (login):", err);
-    return res.status(500).json({ error: "Database error" });
+    return res.status(500).json({ error: "Database error", details: err.message });
   }
 });
 
