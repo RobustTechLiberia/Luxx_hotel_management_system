@@ -11,6 +11,9 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import Suites from "../Content/suites";
 
+// Fallback configuration automatically targeting your Cloudflare Express Backend URL string
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 class HotelBookingForm extends React.Component {
   constructor(props) {
     super(props);
@@ -35,7 +38,7 @@ class HotelBookingForm extends React.Component {
 
   handleHotelClick = async (hotelName) => {
     try {
-      await fetch("http://localhost:8080/api/hotel-click", {
+      await fetch(`${API_BASE_URL}/bookings/hotel-click`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +79,9 @@ class HotelBookingForm extends React.Component {
 
     try {
       console.log("Submitting booking:", bookingData);
-      const response = await fetch("http://localhost:8080/bookings/bookings", {
+      
+      // FIXED ENDPOINT PATH TO MATCH CLOUDFLARE EXPRESS ROUTER LAYER
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -87,7 +92,6 @@ class HotelBookingForm extends React.Component {
 
       if (response.ok && (resJson ? resJson.success : true)) {
         console.log("Booking successful", resJson);
-        // clear form and navigate to submission page
         this.setState(
           {
             checkIn: null,
@@ -103,7 +107,6 @@ class HotelBookingForm extends React.Component {
             redirectToSubmission: true,
           },
           () => {
-            // keep success message state briefly (not strictly required since we'll redirect)
             setTimeout(() => this.setState({ success: false }), 3500);
           },
         );
