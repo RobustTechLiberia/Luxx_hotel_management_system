@@ -14,22 +14,20 @@ class LoginForm extends React.Component {
     apiError: null,
   };
 
-  handleSubmit = async (event) => {
+  handleSubmit = (event) => {
     event.preventDefault();
     
-    // Clear out previous errors on every new click so old states don't get stuck
+    // Clear out previous errors on every click so old messages clear out
     this.setState({ errors: {}, apiError: null });
 
     const formData = new FormData(event.currentTarget);
     
-    // Force inputs to lowercase and trim spaces to prevent hidden typing errors
+    // Sanitize string data safely to prevent casing errors
     const email = formData.get("email")?.toString().trim().toLowerCase() || "";
     const password = formData.get("password")?.toString().trim() || "";
     const errors = {};
 
-    console.log("Attempting login with parsed credentials:", { email, password });
-
-    // 1. Client-Side Validation
+    // 1. Client-Side Input Form Validation
     if (!email) {
       errors.email = "Email is required.";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -43,75 +41,28 @@ class LoginForm extends React.Component {
     }
 
     if (Object.keys(errors).length > 0) {
-      console.log("Validation failed before network request:", errors);
       this.setState({ errors });
       return;
     }
 
-    // Local Helper Routine
-    const logInLocally = (finalEmail, finalUsername, isBypass = false) => {
-      if (isBypass) {
-        console.warn("Backend down/error. Proceeding with fallback local login.");
-      } else {
-        console.log("MATCH! Logged in using default local credentials.");
-      }
-
-      localStorage.setItem("token", "mock-fallback-token-xyz123");
-      localStorage.setItem("username", finalUsername);
-      localStorage.setItem("email", finalEmail);
-
-      this.setState({
-        apiError: null,
-        errors: {},
-        redirectToBookingsHome: true,
-      });
-    };
-
-    // 2. HARDCODED DEFAULT CREDENTIALS CHECK
+    // 2. EXCLUSIVE LOCAL SYSTEM CREDENTIALS CHECK
     if (email === "admin@example.com" && password === "password@123") {
-      logInLocally(email, "admin");
-      return;
-    }
+      // Seed browser context values
+      localStorage.setItem("token", "mock-fallback-token-xyz123");
+      localStorage.setItem("username", "admin");
+      localStorage.setItem("email", email);
 
-    // 3. Authenticate with API Endpoint (Runs if credentials DO NOT match default)
-    try {
-      console.log("Credentials didn't match default. Forwarding to server...");
-      const BACKEND_URL = 
-        import.meta.env?.VITE_BACKEND_URL || 
-        // eslint-disable-next-line no-undef
-        process.env?.REACT_APP_BACKEND_URL || 
-        "https://luxx.gabrielwkun.workers.dev/"; 
-
-      const response = await fetch(`${BACKEND_URL}/users/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        console.log("Server rejected login or crashed. Forcing local bypass fallback.");
-        logInLocally(email, email.split("@")[0], true);
-        return;
-      }
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      localStorage.setItem("username", data.user?.username || email.split("@")[0]);
-      localStorage.setItem("email", data.user?.email || email);
-
+      // Trigger standard routing state mutation
       this.setState({
         apiError: null,
         errors: {},
         redirectToBookingsHome: true,
       });
-    } catch (error) {
-      console.error("Login network connection failed entirely. Forcing local bypass fallback:", error);
-      logInLocally(email, email.split("@")[0], true);
+    } else {
+      // Terminate routine locally with a standard visibility error message
+      this.setState({
+        apiError: "Invalid email or password.",
+      });
     }
   };
 
@@ -196,9 +147,9 @@ class LoginForm extends React.Component {
                   login
                 </button>
 
-                {/* Server Error Alerts */}
+                {/* Explicit local error notification banner */}
                 {this.state.apiError && (
-                  <p className="mt-2 text-sm text-red-500 bg-red-50 p-2 border border-red-200">
+                  <p className="mt-2 text-sm text-red-500 bg-red-50 p-2 border border-red-200 text-center rounded">
                     {this.state.apiError}
                   </p>
                 )}
