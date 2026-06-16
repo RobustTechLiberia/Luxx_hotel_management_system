@@ -11,8 +11,8 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import Suites from "../Content/suites";
 
-// Replace this with your actual Cloudflare hosted Express backend URL
-const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev/home";
+// Your Cloudflare Worker URL
+const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
 
 class HotelBookingForm extends React.Component {
   constructor(props) {
@@ -29,7 +29,7 @@ class HotelBookingForm extends React.Component {
       redirectToSubmission: false,
       error: "",
       success: false,
-      isLoading: false, // Added loading state to disable double submissions
+      isLoading: false, 
     };
   }
 
@@ -37,7 +37,6 @@ class HotelBookingForm extends React.Component {
     this.setState({ [field]: value });
   };
 
-  // Converted to an async function to handle the fetch request cleanly
   handleSubmit = async (e) => {
     e.preventDefault();
     const {
@@ -51,7 +50,7 @@ class HotelBookingForm extends React.Component {
       hotelName,
     } = this.state;
 
-    // 1. Client-Side Validation Check
+
     if (!checkIn || !checkOut) {
       this.setState({ error: "Please select both check-in and check-out dates.", success: false });
       return;
@@ -67,58 +66,65 @@ class HotelBookingForm extends React.Component {
       return;
     }
 
-    // Set loading state
     this.setState({ isLoading: true, error: "" });
 
-    // 2. Send the data to your Express backend on Cloudflare
+
+    const currentCustomerName = localStorage.getItem("username") || "Guest User";
+    const currentCustomerEmail = localStorage.getItem("useremail") || "guest@example.com";
+
+    // 3. Request Execution
     try {
-      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+      const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify({
+          customer: currentCustomerName,
+          email: currentCustomerEmail,
           hotelName: this.props.hotelName || hotelName,
-          checkIn,
-          checkOut,
+          checkIn: checkIn,
+          checkOut: checkOut,
+          rooms: parseInt(rooms, 10),
+          suite: suite === "none" ? "" : suite,
           adult: parseInt(adult, 10) || 0,
           children: parseInt(children, 10) || 0,
-          suite,
-          rooms: parseInt(rooms, 10),
-          paymentNumber,
+          paymentNumber: paymentNumber.trim()
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Server rejected the booking (e.g. 400 Bad Request or 500 Internal Error)
-        throw new Error(data.message || "Failed to process booking on the server.");
+        // Capture specific relational or auth messages passed from your router file
+        throw new Error(data.error || "Server validation failed.");
       }
 
-      // 3. Request succeeded: Clear parameters and redirect
-      this.setState({
-        checkIn: null,
-        checkOut: null,
-        adult: "",
-        children: "",
-        suite: "none",
-        rooms: "",
-        paymentNumber: "",
-        error: "",
-        success: true,
-        isLoading: false,
-      }, () => {
-        // Optional: brief timeout if you want them to see the success message before redirecting
-        setTimeout(() => {
-          this.setState({ redirectToSubmission: true });
-        }, 1500);
-      });
+      // 4. Success Reset Strategy
+      this.setState(
+        {
+          checkIn: null,
+          checkOut: null,
+          adult: "",
+          children: "",
+          suite: "none",
+          rooms: "",
+          paymentNumber: "",
+          error: "",
+          success: true,
+          isLoading: false,
+        },
+        () => {
+          setTimeout(() => {
+            this.setState({ redirectToSubmission: true });
+          }, 2000);
+        }
+      );
 
     } catch (err) {
-      // Catch network errors or backend thrown errors
       this.setState({
-        error: err.message || "An error occurred while connecting to the server.",
+        error: err.message || "Could not complete the booking network request.",
         success: false,
         isLoading: false,
       });
@@ -129,10 +135,10 @@ class HotelBookingForm extends React.Component {
     const { galleryImages = [] } = this.props;
     return (
       <div className="my-5 flex flex-wrap justify-start gap-4 md:my-10 md:gap-2">
-        {galleryImages.slice(0, 4).map((img, index) => (
+        {galleryImages.slice(0, 4).map((src, index) => (
           <div key={index} className="w-[30%] min-w-24 sm:w-28">
             <img
-              src={img}
+              src={src}
               alt=""
               className="h-20 w-full object-cover md:rounded-none"
             />
@@ -183,24 +189,15 @@ class HotelBookingForm extends React.Component {
                       </h1>
                       <ul className="list-none py-3 text-sm leading-6">
                         <li>
-                          <FontAwesomeIcon
-                            icon={faLocationDot}
-                            className="mr-2 text-black"
-                          />
+                          <FontAwesomeIcon icon={faLocationDot} className="mr-2 text-black" />
                           {location}
                         </li>
                         <li>
-                          <FontAwesomeIcon
-                            icon={faEnvelope}
-                            className="mr-2 text-black"
-                          />
+                          <FontAwesomeIcon icon={faEnvelope} className="mr-2 text-black" />
                           :john@example.com
                         </li>
                         <li>
-                          <FontAwesomeIcon
-                            icon={faMobileScreenButton}
-                            className="mr-2 text-black"
-                          />
+                          <FontAwesomeIcon icon={faMobileScreenButton} className="mr-2 text-black" />
                           +231
                         </li>
                       </ul>
@@ -214,10 +211,7 @@ class HotelBookingForm extends React.Component {
                     <div className="flex flex-wrap justify-between gap-4 bg-white py-2">
                       <div className="ml-3 w-20">
                         <div className="mt-2 flex w-36 items-center gap-2 border-none border-stone-200 px-3">
-                          <FontAwesomeIcon
-                            icon={faCalendar}
-                            className="text-sm text-black"
-                          />
+                          <FontAwesomeIcon icon={faCalendar} className="text-sm text-black" />
                           <DatePicker
                             selected={this.state.checkIn}
                             onChange={(d) => this.handleChange("checkIn", d)}
@@ -230,10 +224,7 @@ class HotelBookingForm extends React.Component {
 
                       <div className="w-36">
                         <div className="mt-2 flex w-full items-center gap-2 border-none border-stone-200 px-3 py-2">
-                          <FontAwesomeIcon
-                            icon={faCalendar}
-                            className="text-sm text-black"
-                          />
+                          <FontAwesomeIcon icon={faCalendar} className="text-sm text-black" />
                           <DatePicker
                             selected={this.state.checkOut}
                             onChange={(d) => this.handleChange("checkOut", d)}
@@ -247,17 +238,13 @@ class HotelBookingForm extends React.Component {
 
                     <div className="mx-3 flex flex-wrap justify-between gap-5 bg-white md:mx-5">
                       <div className="w-32">
-                        <h3 className="font-sans text-sm font-semibold capitalize">
-                          guest
-                        </h3>
+                        <h3 className="font-sans text-sm font-semibold capitalize">guest</h3>
                         <br />
                         <p className="font-sans text-sm capitalize">adult</p>
                         <input
                           type="number"
                           value={this.state.adult}
-                          onChange={(e) =>
-                            this.handleChange("adult", e.target.value)
-                          }
+                          onChange={(e) => this.handleChange("adult", e.target.value)}
                           placeholder="0"
                           className="w-28 border-none bg-gray-50"
                         />
@@ -269,9 +256,7 @@ class HotelBookingForm extends React.Component {
                         <input
                           type="number"
                           value={this.state.children}
-                          onChange={(e) =>
-                            this.handleChange("children", e.target.value)
-                          }
+                          onChange={(e) => this.handleChange("children", e.target.value)}
                           placeholder="0"
                           className="w-28 border-none bg-gray-50"
                         />
@@ -282,16 +267,12 @@ class HotelBookingForm extends React.Component {
 
                     <div className="mx-3 flex flex-wrap justify-between gap-5 bg-white md:mx-5">
                       <div className="w-32">
-                        <h3 className="font-sans text-sm font-semibold capitalize">
-                          rooms &amp; suites
-                        </h3>
+                        <h3 className="font-sans text-sm font-semibold capitalize">rooms &amp; suites</h3>
                         <br />
                         <p className="font-sans text-sm capitalize">suites</p>
                         <select
                           value={this.state.suite}
-                          onChange={(e) =>
-                            this.handleChange("suite", e.target.value)
-                          }
+                          onChange={(e) => this.handleChange("suite", e.target.value)}
                           className="w-28 border-none bg-gray-50 text-sm capitalize"
                         >
                           <option value="none">None</option>
@@ -307,9 +288,7 @@ class HotelBookingForm extends React.Component {
                         <input
                           type="number"
                           value={this.state.rooms}
-                          onChange={(e) =>
-                            this.handleChange("rooms", e.target.value)
-                          }
+                          onChange={(e) => this.handleChange("rooms", e.target.value)}
                           placeholder="0"
                           className="w-28 border-none bg-gray-50"
                         />
@@ -321,38 +300,31 @@ class HotelBookingForm extends React.Component {
                         <input
                           type="tel"
                           value={this.state.paymentNumber}
-                          onChange={(e) =>
-                            this.handleChange("paymentNumber", e.target.value)
-                          }
+                          onChange={(e) => this.handleChange("paymentNumber", e.target.value)}
                           className="mx-3 w-50 bg-gray-50"
                           placeholder=" xxxxx"
                         />
                       </div>
                       <p className="mx-3 font-sans text-sm capitalize">
-                        <span className="text-red-700">*</span>we accept payment
-                        using orange money
+                        <span className="text-red-700">*</span>we accept payment using orange money
                       </p>
                     </div>
 
                     <div className="mx-3 py-3 md:mx-3">
                       {this.state.error && (
-                        <p className="mb-3 text-sm text-red-600">
-                          {this.state.error}
-                        </p>
+                        <p className="mb-3 text-sm text-red-600">{this.state.error}</p>
                       )}
                       {this.state.success && (
-                        <p className="mb-3 text-sm text-green-700">
-                          Booking saved successfully. Connecting to secure payment...
-                        </p>
+                        <p className="mb-3 text-sm text-green-700">Booking registered! Forwarding to processing stack...</p>
                       )}
                       <button
                         type="submit"
                         disabled={this.state.isLoading}
                         className={`cursor-pointer px-8 py-2 font-sans text-md font-medium capitalize ${
-                          this.state.isLoading ? "bg-gray-400" : "bg-amber-500"
+                          this.state.isLoading ? "bg-gray-400 opacity-60 cursor-not-allowed" : "bg-amber-500"
                         }`}
                       >
-                        {this.state.isLoading ? "Processing..." : "book now"}
+                        {this.state.isLoading ? "Connecting..." : "book now"}
                       </button>
                     </div>
                   </form>
