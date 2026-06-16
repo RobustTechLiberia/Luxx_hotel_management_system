@@ -1,143 +1,38 @@
-/* eslint-disable no-undef */
 import express from 'express';
+import bookingRouter from './routes/bookings.js'; 
 
-const router = express.Router();
+const app = express();
 
-const formatDate = (dateValue) => {
-  if (!dateValue) return null;
 
-  const date = new Date(dateValue);
-  if (Number.isNaN(date.getTime())) return dateValue;
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
 
-  return date.toISOString().slice(0, 10);
-};
-
-const normalizeHotelName = (hotelName) =>
-  hotelName.toString().trim().toLowerCase().replace(/\s+/g, " ");
-
-const hotelPayments = {
-  "royal grand hotel": "$10",
-  "boluvard hotel": "$25",
-  "boluvard palace": "$25",
-  "sinkor palace": "$5",
-  "sinkor palace hotel": "$5",
-  "bella cassa": "$5",
-  "bella cassa hotel": "$5",
-  "bella casa hotel": "$5",
-  "fammington hotel": "$25",
-  "corona hotel": "$10",
-};
-
-const getHotelPayment = (hotelName) =>
-  hotelPayments[normalizeHotelName(hotelName)] || null;
-
-router.post("/bookings", async (req, res) => {
-  try {
-    const {
-      customer = null,
-      Customers = null,
-      email = null,
-      Email = null,
-      checkIn = null,
-      Availability = null,
-      checkOut = null,
-      Departure = null,
-      rooms = null,
-      Rooms = null,
-      suite = null,
-      Suites = null,
-      adult = null,
-      Adult = null,
-      children = null,
-      Children = null,
-      paymentNumber = null,
-      Payment = null,
-      hotelName = null,
-      Hotels = null,
-    } = req.body;
-
-    const selectedHotel = hotelName || Hotels;
-    const selectedCustomer = customer || Customers;
-    const selectedEmail = email || Email;
-
-    if (!selectedHotel) {
-      return res.status(400).json({ error: "Hotel name is required" });
-    }
-
-    if (!selectedCustomer || !selectedEmail) {
-      return res.status(401).json({
-        success: false,
-        error: "Please sign up or log in before placing a booking",
-      });
-    }
-
-    const hotelPayment = getHotelPayment(selectedHotel);
-
-    if (!hotelPayment) {
-      return res.status(400).json({
-        success: false,
-        error: `No payment amount is configured for ${selectedHotel}`,
-      });
-    }
-
-    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
-
-    if (!db) {
-      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
-    }
-
-    const sql = `
-      INSERT INTO bookings
-      (Customers, Email, PhoneNumbers, Hotels, Amount, Availibilty, Departure, Rooms, Suites, Adult, Children, Payment)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const result = await db.prepare(sql)
-      .bind(
-        selectedCustomer,
-        selectedEmail,
-        paymentNumber || Payment,
-        selectedHotel,
-        hotelPayment,
-        formatDate(checkIn || Availability),
-        formatDate(checkOut || Departure),
-        rooms || Rooms,
-        suite || Suites,
-        adult || Adult,
-        children || Children,
-        hotelPayment
-      )
-      .run();
-
-    return res.status(201).json({
-      success: true,
-      message: "Booking Successful",
-      bookingId: result.meta.last_row_id || null,
-      payment: hotelPayment,
-    });
-
-  } catch (err) {
-    console.error("D1 booking error:", err);
-    return res.status(500).json({
-      success: false,
-      error: "Database error",
-      details: err.message,
-    });
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
   }
+  next();
 });
 
-router.post("/hotel-click", (req, res) => {
-  const { hotelName } = req.body;
 
-  if (!hotelName) {
-    return res.status(400).json({ error: "Hotel name is required" });
-  }
+app.use(express.json());
 
-  return res.status(200).json({
-    success: true,
-    message: "Hotel selected",
-    hotelName,
+
+app.use('/', bookingRouter);
+
+// 4. Global Error Catch-All fallback
+// We add an eslint disable comment for this line so it ignores the unused next variable,
+// keeping the 4-argument signature that Express requires.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("Global Server Failure:", err);
+  return res.status(500).json({
+    success: false,
+    error: "Internal Server Error Environment Exception",
+    details: err.message
   });
 });
 
-export default router;
+export default app;
