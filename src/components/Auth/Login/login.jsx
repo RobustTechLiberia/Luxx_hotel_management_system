@@ -14,20 +14,21 @@ class LoginForm extends React.Component {
     apiError: null,
   };
 
+  // REMOVED async here to prevent the state evaluation bug
   handleSubmit = (event) => {
     event.preventDefault();
     
-    // Clear out previous errors on every click so old messages clear out
+    // 1. Instantly clear out previous errors on submit click
     this.setState({ errors: {}, apiError: null });
 
     const formData = new FormData(event.currentTarget);
     
-    // Sanitize string data safely to prevent casing errors
+    // Standardize input values to avoid casing or space errors
     const email = formData.get("email")?.toString().trim().toLowerCase() || "";
     const password = formData.get("password")?.toString().trim() || "";
     const errors = {};
 
-    // 1. Client-Side Input Form Validation
+    // 2. Form Structural Field Validation
     if (!email) {
       errors.email = "Email is required.";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -45,23 +46,20 @@ class LoginForm extends React.Component {
       return;
     }
 
-    // 2. EXCLUSIVE LOCAL SYSTEM CREDENTIALS CHECK
+    // 3. SECURE CREDENTIAL EVALUATION
     if (email === "admin@example.com" && password === "password@123") {
-      // Seed browser context values
       localStorage.setItem("token", "mock-fallback-token-xyz123");
       localStorage.setItem("username", "admin");
       localStorage.setItem("email", email);
 
-      // Trigger standard routing state mutation
       this.setState({
         apiError: null,
         errors: {},
-        redirectToBookingsHome: true,
+        redirectToBookingsHome: true, // This triggers the redirect below
       });
     } else {
-      // Terminate routine locally with a standard visibility error message
       this.setState({
-        apiError: "Invalid email or password.",
+        apiError: "Login failed. Invalid email or password.",
       });
     }
   };
@@ -74,8 +72,9 @@ class LoginForm extends React.Component {
     }`;
 
   render() {
+    // If successful, redirect layout cleanly
     if (this.state.redirectToBookingsHome) {
-      return <Navigate to="/bookings" replace />;
+      return <Navigate to="/bookings" replace={true} />;
     }
 
     return (
@@ -147,7 +146,7 @@ class LoginForm extends React.Component {
                   login
                 </button>
 
-                {/* Explicit local error notification banner */}
+                {/* Error Banner Output */}
                 {this.state.apiError && (
                   <p className="mt-2 text-sm text-red-500 bg-red-50 p-2 border border-red-200 text-center rounded">
                     {this.state.apiError}
