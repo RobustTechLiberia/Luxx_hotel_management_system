@@ -19,7 +19,7 @@ class Filtering extends React.Component {
           {/* check in */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">check in</p>
-            <div className="flex w-full items-center gap-2 border-0 border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center gap-2 border-none border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkIn}
@@ -33,7 +33,7 @@ class Filtering extends React.Component {
           {/* check out */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">check out</p>
-            <div className="flex w-full items-center gap-2 border-0 border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center gap-2 border-none border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkOut}
@@ -47,7 +47,7 @@ class Filtering extends React.Component {
           {/* destination */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">location</p>
-            <div className="flex w-full items-center border-0 border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center border-none border-slate-400 p-2 rounded">
               <input 
                 type="text" 
                 placeholder="search.." 
