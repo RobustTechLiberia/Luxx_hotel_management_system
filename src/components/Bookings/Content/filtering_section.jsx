@@ -13,59 +13,61 @@ class Filtering extends React.Component {
   render() {
     return (
       <>
-        {/* filter booking */}
-        <div className="md:mt-36 grid grid-cols-3 gap-3 md:py-12 mt-8  border-none mx-8 mb-8 md:flex md:flex-wrap md:justify-center items-center md:gap-6 md:w-auto">
+        {/* filter booking wrapper */}
+        <div className="md:mt-36 mt-8 mx-8 mb-8 flex flex-wrap md:justify-center items-end gap-6">
+          
           {/* check in */}
-
           <div className="w-full md:w-auto">
-            <p className="font-sans text-lg capitalize">check in</p>
-            <div className="mt-2 flex w-full items-center gap-2">
+            <p className="font-sans text-lg capitalize mb-2">check in</p>
+            <div className="flex w-full items-center gap-2 border border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkIn}
                 onChange={(date) => this.setState({ checkIn: date })}
                 placeholderText="select date"
-                className="w-full"
+                className="w-full outline-none"
               />
             </div>
           </div>
+
           {/* check out */}
           <div className="w-full md:w-auto">
-            <p className="font-sans text-lg capitalize">check out</p>
-            <div className="mt-2 flex w-full items-center gap-2">
+            <p className="font-sans text-lg capitalize mb-2">check out</p>
+            <div className="flex w-full items-center gap-2 border border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkOut}
                 onChange={(date) => this.setState({ checkOut: date })}
                 placeholderText="Select date"
-                className="w-full"
+                className="w-full outline-none"
               />
             </div>
           </div>
+
           {/* destination */}
           <div className="w-full md:w-auto">
-            <p className="font-sans text-lg capitalize">
-              location
-              <br />
-              <input type="text" placeholder="search.." className="w-20 md:w-auto" />
-            </p>
+            <p className="font-sans text-lg capitalize mb-2">location</p>
+            <div className="flex w-full items-center border border-slate-400 p-2 rounded">
+              <input 
+                type="text" 
+                placeholder="search.." 
+                className="w-full md:w-auto outline-none" 
+              />
+            </div>
           </div>
 
-          {/* <div className="w-full md:w-32">
-            <p className="font-sans text-lg capitalize">
-              children
-              <br />
-              <input type="number" placeholder="0" className="w-20 md:w-auto" />
-            </p>
-          </div> */}
-          <div className="md:w-auto w-auto md:ml-10">
+          {/* search button container matching the footprint of others */}
+          <div className="w-full md:w-auto">
+            {/* Invisible placeholder matching the height of the labels above */}
+            <p className="text-lg mb-2 select-none opacity-0 pointer-events-none">Search</p>
             <button
               type="submit"
-              className="bg-amber-500 text-md font-sans py-3 cursor-pointer px-3"
+              className="bg-amber-500 text-md font-sans p-2.5 h-[42px] cursor-pointer w-full md:w-12 flex items-center justify-center rounded"
             >
               <FontAwesomeIcon icon={faSearch} className="text-lg" />
             </button>
           </div>
+
         </div>
       </>
     );

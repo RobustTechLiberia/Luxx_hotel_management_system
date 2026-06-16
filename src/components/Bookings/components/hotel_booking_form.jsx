@@ -11,6 +11,9 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import Suites from "../Content/suites";
 
+// Replace this with your actual Cloudflare hosted Express backend URL
+const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev/home";
+
 class HotelBookingForm extends React.Component {
   constructor(props) {
     super(props);
@@ -26,6 +29,7 @@ class HotelBookingForm extends React.Component {
       redirectToSubmission: false,
       error: "",
       success: false,
+      isLoading: false, // Added loading state to disable double submissions
     };
   }
 
@@ -33,21 +37,21 @@ class HotelBookingForm extends React.Component {
     this.setState({ [field]: value });
   };
 
-  handleSubmit = (e) => {
+  // Converted to an async function to handle the fetch request cleanly
+  handleSubmit = async (e) => {
     e.preventDefault();
     const {
       checkIn,
       checkOut,
-      // eslint-disable-next-line no-unused-vars
       adult,
-      // eslint-disable-next-line no-unused-vars
+      children,
       suite,
       rooms,
       paymentNumber,
       hotelName,
     } = this.state;
 
-    // 1. Basic Client-Side Validation Check
+    // 1. Client-Side Validation Check
     if (!checkIn || !checkOut) {
       this.setState({ error: "Please select both check-in and check-out dates.", success: false });
       return;
@@ -63,9 +67,37 @@ class HotelBookingForm extends React.Component {
       return;
     }
 
-    // 2. Clear out existing values and set local state tracking parameters
-    this.setState(
-      {
+    // Set loading state
+    this.setState({ isLoading: true, error: "" });
+
+    // 2. Send the data to your Express backend on Cloudflare
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bookings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hotelName: this.props.hotelName || hotelName,
+          checkIn,
+          checkOut,
+          adult: parseInt(adult, 10) || 0,
+          children: parseInt(children, 10) || 0,
+          suite,
+          rooms: parseInt(rooms, 10),
+          paymentNumber,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Server rejected the booking (e.g. 400 Bad Request or 500 Internal Error)
+        throw new Error(data.message || "Failed to process booking on the server.");
+      }
+
+      // 3. Request succeeded: Clear parameters and redirect
+      this.setState({
         checkIn: null,
         checkOut: null,
         adult: "",
@@ -73,57 +105,39 @@ class HotelBookingForm extends React.Component {
         suite: "none",
         rooms: "",
         paymentNumber: "",
-        hotelName: this.props.hotelName || hotelName,
         error: "",
         success: true,
-        redirectToSubmission: true,
-      },
-      () => {
-        setTimeout(() => this.setState({ success: false }), 3500);
-      },
-    );
+        isLoading: false,
+      }, () => {
+        // Optional: brief timeout if you want them to see the success message before redirecting
+        setTimeout(() => {
+          this.setState({ redirectToSubmission: true });
+        }, 1500);
+      });
+
+    } catch (err) {
+      // Catch network errors or backend thrown errors
+      this.setState({
+        error: err.message || "An error occurred while connecting to the server.",
+        success: false,
+        isLoading: false,
+      });
+    }
   };
 
   renderGallery() {
     const { galleryImages = [] } = this.props;
     return (
       <div className="my-5 flex flex-wrap justify-start gap-4 md:my-10 md:gap-2">
-        {galleryImages[0] && (
-          <div className="w-[30%] min-w-24 sm:w-28">
+        {galleryImages.slice(0, 4).map((img, index) => (
+          <div key={index} className="w-[30%] min-w-24 sm:w-28">
             <img
-              src={galleryImages[0]}
+              src={img}
               alt=""
               className="h-20 w-full object-cover md:rounded-none"
             />
           </div>
-        )}
-        {galleryImages[1] && (
-          <div className="w-[30%] min-w-24 sm:w-28">
-            <img
-              src={galleryImages[1]}
-              alt=""
-              className="h-20 w-full object-cover md:rounded-none"
-            />
-          </div>
-        )}
-        {galleryImages[2] && (
-          <div className="w-[30%] min-w-24 sm:w-28">
-            <img
-              src={galleryImages[2]}
-              alt=""
-              className="h-20 w-full object-cover md:rounded-none"
-            />
-          </div>
-        )}
-        {galleryImages[3] && (
-          <div className="w-[30%] min-w-24 sm:w-28">
-            <img
-              src={galleryImages[3]}
-              alt=""
-              className="h-20 w-full object-cover md:rounded-none"
-            />
-          </div>
-        )}
+        ))}
       </div>
     );
   }
@@ -328,14 +342,17 @@ class HotelBookingForm extends React.Component {
                       )}
                       {this.state.success && (
                         <p className="mb-3 text-sm text-green-700">
-                          Booking saved successfully.
+                          Booking saved successfully. Connecting to secure payment...
                         </p>
                       )}
                       <button
                         type="submit"
-                        className="cursor-pointer bg-amber-500 px-8 py-2 font-sans text-md font-medium capitalize"
+                        disabled={this.state.isLoading}
+                        className={`cursor-pointer px-8 py-2 font-sans text-md font-medium capitalize ${
+                          this.state.isLoading ? "bg-gray-400" : "bg-amber-500"
+                        }`}
                       >
-                        book now
+                        {this.state.isLoading ? "Processing..." : "book now"}
                       </button>
                     </div>
                   </form>
