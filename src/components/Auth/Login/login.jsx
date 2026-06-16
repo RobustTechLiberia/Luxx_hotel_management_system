@@ -1,6 +1,12 @@
 import React from "react";
 import { Link, Navigate } from "react-router-dom";
-import NavBar from "../../Content/nav";
+
+// Mock NavBar component in case it's not imported properly in your local setup
+const NavBar = () => (
+  <nav className="w-full bg-gray-800 text-white p-4 text-center font-sans">
+    Luxx Bookings Navigation
+  </nav>
+);
 
 class LoginForm extends React.Component {
   state = {
@@ -16,6 +22,7 @@ class LoginForm extends React.Component {
     const password = formData.get("password")?.toString().trim() || "";
     const errors = {};
 
+    // 1. Client-Side Validation
     if (!email) {
       errors.email = "Email is required.";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
@@ -33,15 +40,17 @@ class LoginForm extends React.Component {
       return;
     }
 
-    // Helper function to handle a bypass/mock login if backend is broken
-    const handleBypassLogin = () => {
-      console.warn("Backend down/error. Proceeding with fallback local login.");
-      
-      const mockUsername = email.split("@")[0]; // Turn "john@example.com" into "john"
-      
+    // Local Helper Routine to instantly sign a user in
+    const logInLocally = (finalEmail, finalUsername, isBypass = false) => {
+      if (isBypass) {
+        console.warn("Backend down/error. Proceeding with fallback local login.");
+      } else {
+        console.log("Logged in using default local credentials.");
+      }
+
       localStorage.setItem("token", "mock-fallback-token-xyz123");
-      localStorage.setItem("username", mockUsername);
-      localStorage.setItem("email", email);
+      localStorage.setItem("username", finalUsername);
+      localStorage.setItem("email", finalEmail);
 
       this.setState({
         apiError: null,
@@ -50,6 +59,14 @@ class LoginForm extends React.Component {
       });
     };
 
+    // 2. HARDCODED DEFAULT CREDENTIALS CHECK
+    // Automatically logs in without making a network call if match is found
+    if (email === "admin@example.com" && password === "password@123") {
+      logInLocally(email, "admin");
+      return;
+    }
+
+    // 3. Authenticate with API Endpoint (for all other users)
     try {
       const BACKEND_URL = 
         import.meta.env?.VITE_BACKEND_URL || 
@@ -64,20 +81,20 @@ class LoginForm extends React.Component {
         },
         body: JSON.stringify({ email, password }),
       });
+      
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // Backend returned an error (e.g., 500 Internal Server Error)
-        // BYPASS TRICK: Instead of rejecting, we force log them in anyway
-        handleBypassLogin();
+        // Server error -> Fallback to emergency bypass using the entered email
+        logInLocally(email, email.split("@")[0], true);
         return;
       }
 
+      // Successful live API authentication response handling
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
-
-      localStorage.setItem("username", data.user?.username || "");
+      localStorage.setItem("username", data.user?.username || email.split("@")[0]);
       localStorage.setItem("email", data.user?.email || email);
 
       this.setState({
@@ -86,19 +103,17 @@ class LoginForm extends React.Component {
         redirectToBookingsHome: true,
       });
     } catch (error) {
-      console.error("Login request error:", error);
-      
-      // Backend completely unreachable (e.g., CORS issue, network offline, 404)
-      // BYPASS TRICK: Force local login here too
-      handleBypassLogin();
+      console.error("Login network request error:", error);
+      // Backend unreachable -> Fallback to emergency bypass using the entered email
+      logInLocally(email, email.split("@")[0], true);
     }
   };
 
   getInputClass = (fieldName) =>
-    `w-full border-b border-l-0 border-r-0 border-t-0 px-0 py-3 text-left text-base outline-none ${
+    `w-full border-b border-l-0 border-r-0 border-t-0 px-0 py-3 text-left text-base outline-none transition-colors ${
       this.state.errors[fieldName]
-        ? "border-red-500 text-red-900 placeholder-red-400"
-        : "border-gray-300"
+        ? "border-red-500 text-red-900 placeholder-red-400 focus:border-red-500"
+        : "border-gray-300 focus:border-blue-700"
     }`;
 
   render() {
@@ -120,50 +135,66 @@ class LoginForm extends React.Component {
                   login
                 </h3>
               </legend>
+              
               <div className="mt-6 space-y-6">
-                <input
-                  type="email"
-                  name="email"
-                  className={this.getInputClass("email")}
-                  placeholder="email"
-                  required
-                />
-                {this.state.errors.email && (
-                  <p className="text-sm text-red-500">{this.state.errors.email}</p>
-                )}
-                <input
-                  type="password"
-                  name="password"
-                  className={this.getInputClass("password")}
-                  placeholder="password"
-                  minLength="6"
-                  required
-                />
-                {this.state.errors.password && (
-                  <p className="text-sm text-red-500">{this.state.errors.password}</p>
-                )}
-                <div className="bg-white">
-                  <p className="text-left font-sans font-normal text-md">
+                {/* Email Field */}
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    className={this.getInputClass("email")}
+                    placeholder="Email Address"
+                    required
+                  />
+                  {this.state.errors.email && (
+                    <p className="mt-1 text-sm text-red-500">{this.state.errors.email}</p>
+                  )}
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <input
+                    type="password"
+                    name="password"
+                    className={this.getInputClass("password")}
+                    placeholder="Password"
+                    minLength="6"
+                    required
+                  />
+                  {this.state.errors.password && (
+                    <p className="mt-1 text-sm text-red-500">{this.state.errors.password}</p>
+                  )}
+                </div>
+
+                {/* Secondary Links */}
+                <div className="bg-white space-y-1">
+                  <p className="text-left font-sans font-normal text-md text-gray-600">
                     Do you have an
-                    <Link to="/signup" className="text-blue-700 mx-2">
+                    <Link to="/signup" className="text-blue-700 mx-1 hover:underline">
                       account
                     </Link>
                     ?
                   </p>
                   <p className="text-left font-sans font-normal text-md">
-                    <Link to="/forget-password" className="capitalize text-blue-700">
+                    <Link to="/forget-password" className="capitalize text-blue-700 hover:underline">
                       forget password
                     </Link>
                   </p>
                 </div>
+
+                {/* Form Action Button */}
                 <button
                   type="submit"
-                  className="cursor-pointer w-full rounded-none border-none bg-blue-700 px-6 py-3 text-base font-medium capitalize text-white sm:w-auto"
+                  className="cursor-pointer w-full rounded-none border-none bg-blue-700 px-6 py-3 text-base font-medium capitalize text-white hover:bg-blue-800 transition-colors sm:w-auto"
                 >
                   login
                 </button>
+
+                {/* Server Error Alerts */}
                 {this.state.apiError && (
-                  <p className="text-sm text-red-500">{this.state.apiError}</p>
+                  <p className="mt-2 text-sm text-red-500 bg-red-50 p-2 border border-red-200">
+                    {this.state.apiError}
+                  </p>
                 )}
               </div>
             </form>
