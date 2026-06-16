@@ -1,35 +1,40 @@
 /* eslint-disable no-undef */
-const express = require("express");
-const mysql = require("mysql2");
+import express from 'express';
 
 const router = express.Router();
 
-const con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password@123",
-  database: "hotels",
-});
+router.get("/database", async (req, res) => {
+  try {
+  
+    const db = req.cloudflare.env.DB;
 
-router.get("/database", (req, res) => {
-  con.query("SHOW TABLES LIKE 'bookings'", (err, tables) => {
-    if (err) {
-      console.error("Error checking bookings table:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
+    
+    const { results } = await db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='bookings'")
+      .all();
 
-    if (!tables.length) {
+
+    if (!results || results.length === 0) {
       return res.status(404).json({
         success: false,
         error: "The existing bookings table was not found in hotels database",
       });
     }
 
+    
     return res.json({
       success: true,
-      message: "Connected to hotels database and found existing bookings table",
+      message: "Connected to Cloudflare D1 hotels database and found existing bookings table",
     });
-  });
+
+  } catch (err) {
+    
+    console.error("Error checking bookings table in D1:", err);
+    return res.status(500).json({ 
+      success: false, 
+      error: "Cloudflare D1 Database communication error" 
+    });
+  }
 });
 
-module.exports = router;
+export default router;

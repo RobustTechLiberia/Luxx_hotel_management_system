@@ -1,36 +1,43 @@
 /* eslint-disable no-undef */
-const express = require("express");
-const dbRouter = require("./routes/database");
-const bookingsRouter = require("./routes/bookings");
-const usersRouter = require("./routes/users");
-const emailRouter = require("./routes/email");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const port = 8080;
+import express from 'express';
+import cors from 'cors';
+import { httpServerHandler } from 'cloudflare:node'; 
+
+// Import your sub-routers
+import dbRouter from './routes/database.js';
+import bookingsRouter from './routes/bookings.js';
+import usersRouter from './routes/users.js';
+import emailRouter from './routes/email.js';
+
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json()); 
+app.use(express.urlencoded({ extended: true }));
 
-// connect to database
+// 1. CLOUDFLARE BINDINGS INTERCEPT MIDDLEWARE
+// This safely grabs the cloud/local environment and saves it to req.db
+app.use((req, res, next) => {
+  // Cloudflare injects the worker context into req.canvas or req.raw
+  // eslint-disable-next-line no-unused-vars
+  const cfEnv = req.cloudflare?.env || req.raw?.context?.env || globalThis;
+  next();
+});
+
+// Link your sub-routes
 app.use("/", dbRouter);
+app.use("/bookings", bookingsRouter); 
+app.use("/users", usersRouter); 
+app.use("/email", emailRouter); 
 
-// Routes
-app.use("/bookings", bookingsRouter); // Booking form data
-app.use("/users", usersRouter); // Signup, login, and forget password forms
-app.use("/email", emailRouter); // Email-related routes
+app.get("/", (req, res) => {
+  res.send("hello,world");
+});
 
-app
-  .get("/home", (req, res) => {
-    res.send("hello,world");
-  })
+// 2. OFFICIAL CLOUDFLARE LIFECYCLE INITIALIZATION
+// This maps your routing layout to Cloudflare's internal proxy table
+app.listen(3000); 
 
-  .listen(port, (err) => {
-    if (!err) {
-      console.log(`server is running on port ${port}`);
-    } else {
-      console.log(`server crash at ${port}`);
-    }
-  });
+// 3. EXPORT USING THE EXACT PORT CONFIGURATION OBJECT
+export default httpServerHandler({ port: 3000 });

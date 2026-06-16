@@ -1,53 +1,39 @@
 /* eslint-disable no-undef */
-const express = require("express");
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
 const router = express.Router();
-const mysql = require("mysql2");
-
-const con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password@123",
-  database: "hotels",
-});
-
-// establish connection and log any errors
-con.connect((err) => {
-  if (err) {
-    console.error("Database connection error:", err);
-    return;
-  }
-
-  console.log("connected");
-});
+const JWT_SECRET = "supersecretkey"; // Define fallback globally or via wrangler configuration
 
 // manages user credentials
 
 // sign up route
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+router.post("/signup", async (req, res) => {
+  try {
+    const { username, email, password } = req.body;
 
-router.post("/signup", (req, res) => {
-  const { username, email, password } = req.body;
-
-  if (!username || !email || !password) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  // ensure table exists (non-destructive)
-  const createTableSql = `CREATE TABLE IF NOT EXISTS user_credentials (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`;
-
-  con.query(createTableSql, (err) => {
-    if (err) {
-      console.error("Error ensuring user_credentials table:", err);
-      return res.status(500).json({ error: "Database error" });
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
+
+    // CRITICAL FIX: Robust fallback line to dynamically grab your D1 Database instance
+    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
+
+    if (!db) {
+      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
+    }
+
+    // ensure table exists (SQLite compatible format)
+    const createTableSql = `CREATE TABLE IF NOT EXISTS user_credentials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );`;
+
+    await db.prepare(createTableSql).run();
 
     // hash password
     const salt = bcrypt.genSaltSync(10);
@@ -56,53 +42,58 @@ router.post("/signup", (req, res) => {
     const insertSql =
       "INSERT INTO user_credentials (username, email, password) VALUES (?, ?, ?)";
 
-    con.query(insertSql, [username, email, hashed], (err, result) => {
-      if (err) {
-        console.error("DB error (signup):", err);
-        if (err.code === "ER_DUP_ENTRY") {
-          return res.status(409).json({ error: "Email already registered" });
-        }
-        return res.status(500).json({ error: "Database error" });
-      }
+    const result = await db.prepare(insertSql).bind(username, email, hashed).run();
 
-      const token = jwt.sign({ email, username }, JWT_SECRET, {
-        expiresIn: "2h",
-      });
-
-      return res.status(201).json({
-        success: true,
-        message: "Account created",
-        token,
-        user: {
-          id: result.insertId,
-          username,
-          email,
-        },
-      });
+    const token = jwt.sign({ email, username }, JWT_SECRET, {
+      expiresIn: "2h",
     });
-  });
+
+    return res.status(201).json({
+      success: true,
+      message: "Account created",
+      token,
+      user: {
+        id: result.meta.last_row_id || null, // D1 uses last_row_id instead of insertId
+        username,
+        email,
+      },
+    });
+
+  } catch (err) {
+    console.error("D1 error (signup):", err);
+    // SQLite checks for unique constraint violations with constraint message checks
+    if (err.message && err.message.includes("UNIQUE constraint failed")) {
+      return res.status(409).json({ error: "Email already registered" });
+    }
+    return res.status(500).json({ error: "Database error" });
+  }
 });
 
 // login route
-router.post("/login", (req, res) => {
-  const { email, password } = req.body;
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Missing email or password" });
-  }
-
-  const sql = "SELECT * FROM user_credentials WHERE email = ? LIMIT 1";
-  con.query(sql, [email], (err, results) => {
-    if (err) {
-      console.error("DB error (login):", err);
-      return res.status(500).json({ error: "Database error" });
+    if (!email || !password) {
+      return res.status(400).json({ error: "Missing email or password" });
     }
 
-    if (!results || results.length === 0) {
+    // CRITICAL FIX: Robust fallback line to dynamically grab your D1 Database instance
+    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
+
+    if (!db) {
+      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
+    }
+
+    const sql = "SELECT * FROM user_credentials WHERE email = ? LIMIT 1";
+    
+    // Fetch a single row using D1 first() syntax
+    const user = await db.prepare(sql).bind(email).first();
+
+    if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const user = results[0];
     const hashed = user.password;
 
     // Compare password
@@ -139,7 +130,11 @@ router.post("/login", (req, res) => {
         email: user.email,
       },
     });
-  });
+
+  } catch (err) {
+    console.error("D1 error (login):", err);
+    return res.status(500).json({ error: "Database error" });
+  }
 });
 
-module.exports = router;
+export default router;

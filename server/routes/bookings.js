@@ -1,15 +1,7 @@
 /* eslint-disable no-undef */
-const express = require("express");
-const mysql = require("mysql2");
+import express from 'express';
 
 const router = express.Router();
-
-const con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password@123",
-  database: "hotels",
-});
 
 const formatDate = (dateValue) => {
   if (!dateValue) return null;
@@ -39,102 +31,103 @@ const hotelPayments = {
 const getHotelPayment = (hotelName) =>
   hotelPayments[normalizeHotelName(hotelName)] || null;
 
-router.post("/bookings", (req, res) => {
-  const {
-    customer = null,
-    Customers = null,
-    email = null,
-    Email = null,
-    checkIn = null,
-    Availability = null,
-    checkOut = null,
-    Departure = null,
-    rooms = null,
-    Rooms = null,
-    suite = null,
-    Suites = null,
-    adult = null,
-    Adult = null,
-    children = null,
-    Children = null,
-    paymentNumber = null,
-    Payment = null,
-    hotelName = null,
-    Hotels = null,
-  } = req.body;
+router.post("/bookings", async (req, res) => {
+  try {
+    const {
+      customer = null,
+      Customers = null,
+      email = null,
+      Email = null,
+      checkIn = null,
+      Availability = null,
+      checkOut = null,
+      Departure = null,
+      rooms = null,
+      Rooms = null,
+      suite = null,
+      Suites = null,
+      adult = null,
+      Adult = null,
+      children = null,
+      Children = null,
+      paymentNumber = null,
+      Payment = null,
+      hotelName = null,
+      Hotels = null,
+    } = req.body;
 
-  const selectedHotel = hotelName || Hotels;
-  const selectedCustomer = customer || Customers;
-  const selectedEmail = email || Email;
+    const selectedHotel = hotelName || Hotels;
+    const selectedCustomer = customer || Customers;
+    const selectedEmail = email || Email;
 
-  if (!selectedHotel) {
-    return res.status(400).json({ error: "Hotel name is required" });
-  }
+    if (!selectedHotel) {
+      return res.status(400).json({ error: "Hotel name is required" });
+    }
 
-  if (!selectedCustomer || !selectedEmail) {
-    return res.status(401).json({
-      success: false,
-      error: "Please sign up or log in before placing a booking",
-    });
-  }
-
-  const hotelPayment = getHotelPayment(selectedHotel);
-
-  if (!hotelPayment) {
-    return res.status(400).json({
-      success: false,
-      error: `No payment amount is configured for ${selectedHotel}`,
-    });
-  }
-
-  const sql = `
-    INSERT INTO bookings
-    (Customers, Email, PhoneNumbers, Hotels, Amount, Availibilty, Departure, Rooms, Suites, Adult, Children, Payment)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  const values = [
-    selectedCustomer,
-    selectedEmail,
-    paymentNumber || Payment,
-    selectedHotel,
-    hotelPayment,
-    formatDate(checkIn || Availability),
-    formatDate(checkOut || Departure),
-    rooms || Rooms,
-    suite || Suites,
-    adult || Adult,
-    children || Children,
-    hotelPayment,
-  ];
-
-  con.query(sql, values, (err, result) => {
-    if (err) {
-      console.error(
-        "Error inserting booking into existing bookings table:",
-        err,
-      );
-      return res.status(500).json({
+    if (!selectedCustomer || !selectedEmail) {
+      return res.status(401).json({
         success: false,
-        error: "Database error",
-        details: err.sqlMessage || err.message,
+        error: "Please sign up or log in before placing a booking",
       });
     }
 
-    if (!result) {
-      return res.status(500).json({
+    const hotelPayment = getHotelPayment(selectedHotel);
+
+    if (!hotelPayment) {
+      return res.status(400).json({
         success: false,
-        error: "Booking insert did not return a result",
+        error: `No payment amount is configured for ${selectedHotel}`,
       });
     }
+
+    // CRITICAL FIX: Robust fallback line to dynamically grab your D1 Database instance
+    const db = req.cloudflare?.env?.DB || globalThis.env?.DB || req.raw?.context?.env?.DB;
+
+    // Verify database context exists before querying
+    if (!db) {
+      throw new Error("Cloudflare D1 Database binding was not found or failed to initialize.");
+    }
+
+    // Cloudflare D1 query construction 
+    const sql = `
+      INSERT INTO bookings
+      (Customers, Email, PhoneNumbers, Hotels, Amount, Availibilty, Departure, Rooms, Suites, Adult, Children, Payment)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    // Await the execution of the statements natively
+    const result = await db.prepare(sql)
+      .bind(
+        selectedCustomer,
+        selectedEmail,
+        paymentNumber || Payment,
+        selectedHotel,
+        hotelPayment,
+        formatDate(checkIn || Availability),
+        formatDate(checkOut || Departure),
+        rooms || Rooms,
+        suite || Suites,
+        adult || Adult,
+        children || Children,
+        hotelPayment
+      )
+      .run();
 
     return res.status(201).json({
       success: true,
       message: "Booking Successful",
-      bookingId: result.insertId || null,
+      bookingId: result.meta.last_row_id || null, // D1 uses meta.last_row_id instead of insertId
       payment: hotelPayment,
     });
-  });
+
+  } catch (err) {
+    console.error("D1 booking error:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Database error",
+      details: err.message,
+    });
+  }
 });
 
 router.post("/hotel-click", (req, res) => {
@@ -144,11 +137,11 @@ router.post("/hotel-click", (req, res) => {
     return res.status(400).json({ error: "Hotel name is required" });
   }
 
-  // return res.status(200).json({
-  //   success: true,
-  //   message: "Hotel selected",
-  //   hotelName,
-  // });
+  return res.status(200).json({
+    success: true,
+    message: "Hotel selected",
+    hotelName,
+  });
 });
 
-module.exports = router;
+export default router;
