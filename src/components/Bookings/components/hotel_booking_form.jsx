@@ -11,9 +11,6 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import Suites from "../Content/suites";
 
-// Fallback configuration automatically targeting your Cloudflare Express Backend URL string
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
 class HotelBookingForm extends React.Component {
   constructor(props) {
     super(props);
@@ -36,96 +33,55 @@ class HotelBookingForm extends React.Component {
     this.setState({ [field]: value });
   };
 
-  handleHotelClick = async (hotelName) => {
-    try {
-      await fetch(`${API_BASE_URL}/bookings/hotel-click`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ hotelName }),
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  handleSubmit = async (e) => {
+  handleSubmit = (e) => {
     e.preventDefault();
     const {
       checkIn,
       checkOut,
+      // eslint-disable-next-line no-unused-vars
       adult,
-      children,
+      // eslint-disable-next-line no-unused-vars
       suite,
       rooms,
       paymentNumber,
       hotelName,
     } = this.state;
 
-    const bookingData = {
-      customer: localStorage.getItem("username") || null,
-      email: localStorage.getItem("email") || null,
-      checkIn,
-      checkOut,
-      adult,
-      children,
-      suite,
-      rooms,
-      paymentNumber,
-      hotelName: hotelName || this.props.hotelName,
-      amount: 0,
-    };
-
-    try {
-      console.log("Submitting booking:", bookingData);
-      
-      // FIXED ENDPOINT PATH TO MATCH CLOUDFLARE EXPRESS ROUTER LAYER
-      const response = await fetch(`${API_BASE_URL}/bookings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bookingData),
-      });
-      const resJson = await response.json().catch(() => null);
-
-      if (response.ok && (resJson ? resJson.success : true)) {
-        console.log("Booking successful", resJson);
-        this.setState(
-          {
-            checkIn: null,
-            checkOut: null,
-            adult: "",
-            children: "",
-            suite: "none",
-            rooms: "",
-            paymentNumber: "",
-            hotelName: this.props.hotelName || hotelName,
-            error: "",
-            success: true,
-            redirectToSubmission: true,
-          },
-          () => {
-            setTimeout(() => this.setState({ success: false }), 3500);
-          },
-        );
-      } else {
-        console.error("Booking failed", resJson || response.status);
-        this.setState({
-          error:
-            resJson?.error ||
-            "Booking failed. Please check the form and try again.",
-          success: false,
-        });
-      }
-    } catch (error) {
-      console.error("Error connecting to the server:", error);
-      this.setState({
-        error: "Unable to connect to the booking server.",
-        success: false,
-      });
+    // 1. Basic Client-Side Validation Check
+    if (!checkIn || !checkOut) {
+      this.setState({ error: "Please select both check-in and check-out dates.", success: false });
+      return;
     }
+
+    if (!rooms || parseInt(rooms, 10) <= 0) {
+      this.setState({ error: "Please specify at least 1 room to book.", success: false });
+      return;
+    }
+
+    if (!paymentNumber.trim()) {
+      this.setState({ error: "Please enter your Orange Money phone number.", success: false });
+      return;
+    }
+
+    // 2. Clear out existing values and set local state tracking parameters
+    this.setState(
+      {
+        checkIn: null,
+        checkOut: null,
+        adult: "",
+        children: "",
+        suite: "none",
+        rooms: "",
+        paymentNumber: "",
+        hotelName: this.props.hotelName || hotelName,
+        error: "",
+        success: true,
+        redirectToSubmission: true,
+      },
+      () => {
+        setTimeout(() => this.setState({ success: false }), 3500);
+      },
+    );
   };
 
   renderGallery() {

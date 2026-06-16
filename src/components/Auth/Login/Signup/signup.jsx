@@ -12,14 +12,21 @@ class SignupForm extends React.Component {
 
   handleSubmit = (event) => {
     event.preventDefault();
+    
+    // Reset notification alerts on each new submission attempt
+    this.setState({ errors: {}, apiError: null, successMessage: null });
+
     const formData = new FormData(event.currentTarget);
     const fullName = formData.get("fullname")?.toString().trim() || "";
-    const email = formData.get("email")?.toString().trim() || "";
+    const email = formData.get("email")?.toString().trim().toLowerCase() || "";
     const password = formData.get("password")?.toString().trim() || "";
     const errors = {};
 
+    // 1. Enhanced Client-Side Validation
     if (!fullName) {
       errors.fullname = "Full name is required.";
+    } else if (fullName.length < 3) {
+      errors.fullname = "Name must be at least 3 characters long.";
     }
 
     if (!email) {
@@ -34,48 +41,28 @@ class SignupForm extends React.Component {
       errors.password = "Password must be at least 6 characters.";
     }
 
-    this.setState({ errors });
-    // if no validation errors, submit to backend
-    if (Object.keys(errors).length === 0) {
-      this.setState({ apiError: null, successMessage: null });
-      fetch("http://localhost:8080/users/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: fullName, email, password }),
-      })
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (res.ok) {
-            if (data.token) {
-              localStorage.setItem("token", data.token);
-            }
-
-            localStorage.setItem(
-              "username",
-              data.user?.username || fullName,
-            );
-            localStorage.setItem("email", data.user?.email || email);
-
-            this.setState({
-              successMessage: data.message || "Account created",
-              redirectToBookingsHome: true,
-            });
-          } else {
-            this.setState({ apiError: data.error || "Signup failed" });
-          }
-        })
-        .catch((err) => {
-          console.error("Signup request error:", err);
-          this.setState({ apiError: "Network error" });
-        });
+    // Set errors state and halt process if validations fail
+    if (Object.keys(errors).length > 0) {
+      this.setState({ errors });
+      return;
     }
+
+    // 2. Local-Only Success Authentication Handler
+    localStorage.setItem("token", "mock-local-signup-token-987xyz");
+    localStorage.setItem("username", fullName);
+    localStorage.setItem("email", email);
+
+    this.setState({
+      successMessage: "Account created successfully!",
+      redirectToBookingsHome: true,
+    });
   };
 
   getInputClass = (fieldName) =>
-    `w-full border-b border-l-0 border-r-0 border-t-0 px-0 py-3 text-left text-base outline-none ${
+    `w-full border-b border-l-0 border-r-0 border-t-0 px-0 py-3 text-left text-base outline-none transition-colors ${
       this.state.errors[fieldName]
-        ? "border-red-500 text-red-900 placeholder-red-400"
-        : "border-gray-300"
+        ? "border-red-500 text-red-900 placeholder-red-400 focus:border-red-500"
+        : "border-gray-300 focus:border-blue-700"
     }`;
 
   render() {
@@ -98,62 +85,77 @@ class SignupForm extends React.Component {
                 </h3>
               </legend>
               <div className="mt-6 space-y-6">
-                <input
-                  type="text"
-                  name="fullname"
-                  className={this.getInputClass("fullname")}
-                  placeholder="full name"
-                  required
-                />
-                {this.state.errors.fullname && (
-                  <p className="text-sm text-red-500">
-                    {this.state.errors.fullname}
-                  </p>
-                )}
-                <input
-                  type="email"
-                  name="email"
-                  className={this.getInputClass("email")}
-                  placeholder="email"
-                  required
-                />
-                {this.state.errors.email && (
-                  <p className="text-sm text-red-500">
-                    {this.state.errors.email}
-                  </p>
-                )}
-                <input
-                  type="password"
-                  name="password"
-                  className={this.getInputClass("password")}
-                  placeholder="password"
-                  minLength="6"
-                  required
-                />
-                {this.state.errors.password && (
-                  <p className="text-sm text-red-500">
-                    {this.state.errors.password}
-                  </p>
-                )}
+                {/* Full Name Input Field */}
+                <div>
+                  <input
+                    type="text"
+                    name="fullname"
+                    className={this.getInputClass("fullname")}
+                    placeholder="Full Name"
+                    required
+                  />
+                  {this.state.errors.fullname && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {this.state.errors.fullname}
+                    </p>
+                  )}
+                </div>
+
+                {/* Email Input Field */}
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    className={this.getInputClass("email")}
+                    placeholder="Email Address"
+                    required
+                  />
+                  {this.state.errors.email && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {this.state.errors.email}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password Input Field */}
+                <div>
+                  <input
+                    type="password"
+                    name="password"
+                    className={this.getInputClass("password")}
+                    placeholder="Password"
+                    minLength="6"
+                    required
+                  />
+                  {this.state.errors.password && (
+                    <p className="mt-1 text-sm text-red-500">
+                      {this.state.errors.password}
+                    </p>
+                  )}
+                </div>
+
                 <p className="text-left font-sans text-md font-normal">
                   Already have an account?
-                  <Link to="/login" className="mx-2 text-blue-700">
+                  <Link to="/login" className="mx-2 text-blue-700 hover:underline">
                     login
                   </Link>
                 </p>
+
                 <button
                   type="submit"
-                  className="w-full cursor-pointer rounded-none border-none bg-blue-700 px-6 py-3 text-base font-medium capitalize text-white sm:w-auto"
+                  className="w-full cursor-pointer rounded-none border-none bg-blue-700 px-6 py-3 text-base font-medium capitalize text-white hover:bg-blue-800 transition-colors sm:w-auto"
                 >
                   sign up
                 </button>
+
+                {/* Local Feedback Messaging Containers */}
                 {this.state.apiError && (
-                  <p className="mt-3 text-sm text-red-500">
+                  <p className="mt-3 text-sm text-red-500 bg-red-50 p-2 border border-red-200 text-center rounded">
                     {this.state.apiError}
                   </p>
                 )}
                 {this.state.successMessage && (
-                  <p className="mt-3 text-sm text-green-600">
+                  <p className="mt-3 text-sm text-green-600 bg-green-50 p-2 border border-green-200 text-center rounded">
                     {this.state.successMessage}
                   </p>
                 )}

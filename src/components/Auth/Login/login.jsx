@@ -1,11 +1,6 @@
 import React from "react";
 import { Link, Navigate } from "react-router-dom";
-
-const NavBar = () => (
-  <nav className="w-full bg-gray-800 text-white p-4 text-center font-sans">
-    Luxx Bookings Navigation
-  </nav>
-);
+import NavBar from "../../Content/nav";
 
 class LoginForm extends React.Component {
   state = {
