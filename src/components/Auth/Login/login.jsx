@@ -34,7 +34,14 @@ class LoginForm extends React.Component {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/users/login", {
+      // DYNAMIC FIX: Detect environment or fall back to your deployed Cloudflare URL
+      const BACKEND_URL = 
+        import.meta.env?.VITE_BACKEND_URL || 
+        // eslint-disable-next-line no-undef
+        process.env?.REACT_APP_BACKEND_URL || 
+        "https://luxx.gabrielwkun.workers.dev/"; // ⚠️ REPLACE THIS STRING WITH YOUR DEPLOYED WORKER DOMAIN
+
+      const response = await fetch(`${BACKEND_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
