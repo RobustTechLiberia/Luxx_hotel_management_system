@@ -19,7 +19,7 @@ class Filtering extends React.Component {
           {/* check in */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">check in</p>
-            <div className="flex w-full items-center gap-2 border border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center gap-2 border-0 border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkIn}
@@ -33,7 +33,7 @@ class Filtering extends React.Component {
           {/* check out */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">check out</p>
-            <div className="flex w-full items-center gap-2 border border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center gap-2 border-0 border-slate-400 p-2 rounded">
               <FontAwesomeIcon icon={faCalendar} className="text-xl" />
               <DatePicker
                 selected={this.state.checkOut}
@@ -47,7 +47,7 @@ class Filtering extends React.Component {
           {/* destination */}
           <div className="w-full md:w-auto">
             <p className="font-sans text-lg capitalize mb-2">location</p>
-            <div className="flex w-full items-center border border-slate-400 p-2 rounded">
+            <div className="flex w-full items-center border-0 border-slate-400 p-2 rounded">
               <input 
                 type="text" 
                 placeholder="search.." 
@@ -62,7 +62,7 @@ class Filtering extends React.Component {
             <p className="text-lg mb-2 select-none opacity-0 pointer-events-none">Search</p>
             <button
               type="submit"
-              className="bg-amber-500 text-md font-sans p-2.5 h-[42px] cursor-pointer w-full md:w-12 flex items-center justify-center rounded"
+              className="bg-amber-500 text-md font-sans py-4.5  cursor-pointer w-full md:w-12 flex items-center justify-center rounded-none"
             >
               <FontAwesomeIcon icon={faSearch} className="text-lg" />
             </button>
