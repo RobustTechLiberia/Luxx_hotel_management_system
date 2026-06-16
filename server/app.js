@@ -16,6 +16,15 @@ app.use(cors());
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 
+// 1. Core Injection Middleware
+// This safely updates properties dynamically before hitting any routing matches
+app.use((req, res, next) => {
+  // Read references cleanly out of global execution contexts if available
+  req.db = globalThis.env?.DB;
+  req.JWT_SECRET = globalThis.env?.JWT_SECRET;
+  next();
+});
+
 // Link your sub-routes
 app.use("/", dbRouter);
 app.use("/bookings", bookingsRouter); 
@@ -32,14 +41,10 @@ const server = app.listen(3000);
 // OFFICIAL CLOUDFLARE CONFIGURATION EXPORT
 export default httpServerHandler(server, {
   async fetch(request, env, ctx) {
-    // Intercept every single web request globally 
-    // and attach your D1 database configuration to Express
-    app.use((req, res, next) => {
-      req.db = env.DB; 
-      next();
-    });
+    // 2. Firmly bind variable contexts globally for the current execution thread isolate
+    globalThis.env = env;
 
-    // Pass execution down to the underlying handler pipeline
+    // Pass execution down to the underlying handler pipeline cleanly
     return httpServerHandler(server).fetch(request, env, ctx);
   }
 });

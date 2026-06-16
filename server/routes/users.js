@@ -4,7 +4,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 const router = express.Router();
-const JWT_SECRET = "supersecretkey";
 
 // sign up route
 router.post("/signup", async (req, res) => {
@@ -17,9 +16,16 @@ router.post("/signup", async (req, res) => {
 
     // Fetch the cleanly bound D1 instance attached via app.js middleware
     const db = req.db;
+    
+    // Fetch the hidden JWT secret injected dynamically from Cloudflare Environment context
+    const JWT_SECRET = req.JWT_SECRET;
 
     if (!db) {
       throw new Error("Cloudflare D1 database reference failed to inject via core handler middleware.");
+    }
+    
+    if (!JWT_SECRET) {
+      throw new Error("Cloudflare Environment JWT_SECRET variable was not loaded properly.");
     }
 
     // hash password
@@ -66,9 +72,16 @@ router.post("/login", async (req, res) => {
     }
 
     const db = req.db;
+    
+    // Fetch the hidden JWT secret injected dynamically from Cloudflare Environment context
+    const JWT_SECRET = req.JWT_SECRET;
 
     if (!db) {
       throw new Error("Cloudflare D1 database reference failed to inject via core handler middleware.");
+    }
+    
+    if (!JWT_SECRET) {
+      throw new Error("Cloudflare Environment JWT_SECRET variable was not loaded properly.");
     }
 
     const sql = "SELECT * FROM user_credentials WHERE email = ? LIMIT 1";
