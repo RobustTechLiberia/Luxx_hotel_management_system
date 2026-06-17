@@ -1,5 +1,5 @@
 name = "luxx-hotel-api"
-main = "src/index.js"
+main = "app.js"
 compatibility_date = "2026-06-17"
 compatibility_flags = [ "nodejs_compat" ]
 
