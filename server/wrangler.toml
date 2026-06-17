@@ -1,9 +1,8 @@
-name = "luxx"
-main = "app.js"
-compatibility_date = "2026-06-16"
-compatibility_flags = [ "node_compat" ]
+name = "luxx-hotel-api"
+main = "src/index.js"
+compatibility_date = "2026-06-17"
+compatibility_flags = [ "nodejs_compat" ]
 
-[[d1_databases]]
-binding = "DB"
-database_name = "hotels"
-database_id = "26f062cd-4ef6-4048-8eb1-94d58a7a9d49"
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "d55104caa85d4d169bab949b0d5afe5a"
