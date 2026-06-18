@@ -3,6 +3,16 @@ main = "app.js"
 compatibility_date = "2026-06-17"
 compatibility_flags = [ "nodejs_compat" ]
 
+
+assets = { directory = "./dist" }
+
+
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "d55104caa85d4d169bab949b0d5afe5a"
+
+
+[[d1_databases]]
+binding = "hotels"
+database_name = "hotels"
+database_id = "9332ce4e-46b3-4889-8dbe-907e12277133"
