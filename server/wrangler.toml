@@ -18,5 +18,5 @@ database_id = "9332ce4e-46b3-4889-8dbe-907e12277133"
 
 # KV namespace binding (example if you want KV too)
 [[kv_namespaces]]
-binding = "LUXX_KV"
-id = "your-kv-id-here"
+binding = "lux"
+"id": "15c9ed48cd044eda99402ab4d66b86b8"
