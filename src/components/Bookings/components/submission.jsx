@@ -2,6 +2,7 @@ import React from "react";
 // import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 // import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 import NavBar from "../../Content/nav";
+import BookingChatbot from "./booking_chatbot";
 
 class FormSubmission extends React.Component {
   render() {
@@ -28,6 +29,7 @@ class FormSubmission extends React.Component {
             thanks
           </p>
         </div>
+        <BookingChatbot />
       </>
     );
   }

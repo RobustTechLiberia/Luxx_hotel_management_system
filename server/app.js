@@ -5,6 +5,7 @@ import { httpServerHandler } from 'cloudflare:node';
 
 import usersRouter from './routes/users.js';
 import bookingsRouter from './routes/bookings.js';
+import dbRouter from './routes/database.js';
 import emailRouter from './routes/email.js';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use((req, _res, next) => {
 });
 
 app.use('/', usersRouter);
+app.use('/', dbRouter);
 app.use('/bookings', bookingsRouter);
 app.use('/email', emailRouter);
 
@@ -64,5 +66,6 @@ export default {
     return handler.fetch(request, env, ctx);
   }
 };
+
 
 

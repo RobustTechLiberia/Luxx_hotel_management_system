@@ -17,6 +17,89 @@ async function getDBConnection(req) {
   });
 }
 
+const hotelInfo = {
+  "royal grand hotel": { price: "$10", note: "good for quick city stays" },
+  "boluvard hotel": { price: "$25", note: "best for longer stays" },
+  "boluvard palace": { price: "$25", note: "best for longer stays" },
+  "sinkor palace": { price: "$5", note: "budget-friendly option" },
+  "sinkor palace hotel": { price: "$5", note: "budget-friendly option" },
+  "bella casa hotel": { price: "$5", note: "budget-friendly option" },
+  "bella cassa hotel": { price: "$5", note: "budget-friendly option" },
+  "fammington hotel": { price: "$25", note: "better for family or business trips" },
+  "corona hotel": { price: "$10", note: "balanced mid-range stay" },
+};
+
+const normalizeText = (value = "") => String(value).trim().toLowerCase();
+
+const buildFallbackReply = (message, hotelName) => {
+  const text = normalizeText(message);
+  const hotel = hotelInfo[normalizeText(hotelName)] || null;
+
+  if (text.includes("price") || text.includes("cost") || text.includes("payment")) {
+    return hotel
+      ? `For ${hotelName}, the booking amount is ${hotel.price}. You can enter your Orange Money number in the booking form to continue.`
+      : 'Our hotel prices vary by property. Ask me about a specific hotel and I will tell you the booking amount.';
+  }
+
+  if (text.includes("book") || text.includes("reserve") || text.includes("room") || text.includes("booking")) {
+    return 'Choose a hotel, pick your check-in and check-out dates, select rooms and suites, then submit the form with your payment number. I can help you narrow down the best option if you want.';
+  }
+
+  if (text.includes("which") || text.includes("best") || text.includes("recommend")) {
+    return hotel
+      ? `If you are looking at ${hotelName}, it is ${hotel.note}.`
+      : 'Tell me your budget and the kind of stay you want, and I will recommend a hotel that fits.';
+  }
+
+  if (text.includes("orange money") || text.includes("payment number") || text.includes("phone")) {
+    return 'Enter the Orange Money phone number you want to use for payment in the booking form. That number is stored with your reservation.';
+  }
+
+  return hotel
+    ? `I can help with ${hotelName}. The booking amount is ${hotel.price} and it is ${hotel.note}.`
+    : 'I can help you choose a hotel, explain booking steps, and answer payment questions. Ask me anything about reserving a room.';
+};
+
+router.post('/chat', async (req, res) => {
+  const { messages = [], hotelName = '', context = '' } = req.body || {};
+  const lastMessage = messages.length ? messages[messages.length - 1] : null;
+  const userText = normalizeText(lastMessage?.text || '');
+
+  if (!userText) {
+    return res.status(400).json({ success: false, error: 'A user message is required.' });
+  }
+
+  const env = req.env || req.raw?.env || globalThis.__LUXX_ENV || {};
+
+  try {
+    if (env.AI?.run) {
+      const promptMessages = [
+        { role: 'system', content: context || 'You are a hotel booking assistant.' },
+        ...messages.map((message) => ({
+          role: message.role === 'assistant' ? 'assistant' : 'user',
+          content: message.text,
+        })),
+      ];
+
+      const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+        messages: promptMessages,
+      });
+
+      const reply = aiResponse?.response || aiResponse?.result || aiResponse?.text || aiResponse?.output || '';
+      if (reply) {
+        return res.json({ success: true, reply });
+      }
+    }
+  } catch (error) {
+    console.error('AI chat fallback error:', error);
+  }
+
+  return res.json({
+    success: true,
+    reply: buildFallbackReply(userText, hotelName),
+  });
+});
+
 router.post('/api/users/register', async (req, res) => {
   const { username, email, password } = req.body;
   

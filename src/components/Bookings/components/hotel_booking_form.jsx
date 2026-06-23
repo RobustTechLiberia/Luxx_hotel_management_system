@@ -10,6 +10,7 @@ import {
 import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import Suites from "../Content/suites";
+import BookingChatbot from "./booking_chatbot";
 
 // Your Cloudflare Worker URL
 const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
@@ -29,7 +30,7 @@ class HotelBookingForm extends React.Component {
       redirectToSubmission: false,
       error: "",
       success: false,
-      isLoading: false, 
+      isLoading: false,
     };
   }
 
@@ -50,7 +51,6 @@ class HotelBookingForm extends React.Component {
       hotelName,
     } = this.state;
 
-
     if (!checkIn || !checkOut) {
       this.setState({ error: "Please select both check-in and check-out dates.", success: false });
       return;
@@ -68,18 +68,16 @@ class HotelBookingForm extends React.Component {
 
     this.setState({ isLoading: true, error: "" });
 
-
     const currentCustomerName = localStorage.getItem("username") || "Guest User";
     const currentCustomerEmail =
       localStorage.getItem("useremail") || localStorage.getItem("email") || "";
 
-    // 3. Request Execution
     try {
       const response = await fetch(`${API_BASE_URL}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          Accept: "application/json",
         },
         body: JSON.stringify({
           customer: currentCustomerName,
@@ -91,18 +89,16 @@ class HotelBookingForm extends React.Component {
           suite: suite === "none" ? "" : suite,
           adult: parseInt(adult, 10) || 0,
           children: parseInt(children, 10) || 0,
-          paymentNumber: paymentNumber.trim()
+          paymentNumber: paymentNumber.trim(),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Capture specific relational or auth messages passed from your router file
         throw new Error(data.error || "Server validation failed.");
       }
 
-      // 4. Success Reset Strategy
       this.setState(
         {
           checkIn: null,
@@ -122,7 +118,6 @@ class HotelBookingForm extends React.Component {
           }, 2000);
         }
       );
-
     } catch (err) {
       this.setState({
         error: err.message || "Could not complete the booking network request.",
@@ -138,11 +133,7 @@ class HotelBookingForm extends React.Component {
       <div className="my-5 flex flex-wrap justify-start gap-4 md:my-10 md:gap-2">
         {galleryImages.slice(0, 4).map((src, index) => (
           <div key={index} className="w-[30%] min-w-24 sm:w-28">
-            <img
-              src={src}
-              alt=""
-              className="h-20 w-full object-cover md:rounded-none"
-            />
+            <img src={src} alt="" className="h-20 w-full object-cover md:rounded-none" />
           </div>
         ))}
       </div>
@@ -159,10 +150,7 @@ class HotelBookingForm extends React.Component {
       <>
         <NavBar />
         <div className="mx-3 mt-14 bg-white md:mt-20 lg:mx-44">
-          <Link
-            to="/bookings"
-            className="text-left font-sans text-sm font-medium capitalize text-blue-700"
-          >
+          <Link to="/bookings" className="text-left font-sans text-sm font-medium capitalize text-blue-700">
             back
           </Link>
         </div>
@@ -178,16 +166,10 @@ class HotelBookingForm extends React.Component {
                 <div className="min-h-150 w-full max-w-sm bg-white md:shadow-sm">
                   <div className="mt-3 flex items-start justify-center gap-4 px-3">
                     <div className="shrink-0">
-                      <img
-                        src={heroImage}
-                        alt={hotelName}
-                        className="h-20 w-28 rounded-sm object-cover"
-                      />
+                      <img src={heroImage} alt={hotelName} className="h-20 w-28 rounded-sm object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h1 className="text-left font-sans text-lg font-semibold capitalize">
-                        {hotelName}
-                      </h1>
+                      <h1 className="text-left font-sans text-lg font-semibold capitalize">{hotelName}</h1>
                       <ul className="list-none py-3 text-sm leading-6">
                         <li>
                           <FontAwesomeIcon icon={faLocationDot} className="mr-2 text-black" />
@@ -206,9 +188,7 @@ class HotelBookingForm extends React.Component {
                   </div>
 
                   <form onSubmit={this.handleSubmit}>
-                    <h3 className="mx-5 text-left text-sm font-semibold capitalize md:py-2">
-                      availability
-                    </h3>
+                    <h3 className="mx-5 text-left text-sm font-semibold capitalize md:py-2">availability</h3>
                     <div className="flex flex-wrap justify-between gap-4 bg-white py-2">
                       <div className="ml-3 w-20">
                         <div className="mt-2 flex w-36 items-center gap-2 border-none border-stone-200 px-3">
@@ -312,9 +292,7 @@ class HotelBookingForm extends React.Component {
                     </div>
 
                     <div className="mx-3 py-3 md:mx-3">
-                      {this.state.error && (
-                        <p className="mb-3 text-sm text-red-600">{this.state.error}</p>
-                      )}
+                      {this.state.error && <p className="mb-3 text-sm text-red-600">{this.state.error}</p>}
                       {this.state.success && (
                         <p className="mb-3 text-sm text-green-700">Booking registered! Forwarding to processing stack...</p>
                       )}
@@ -334,6 +312,7 @@ class HotelBookingForm extends React.Component {
             </div>
           </div>
         </div>
+        <BookingChatbot hotelName={hotelName} />
         <Suites />
       </>
     );
