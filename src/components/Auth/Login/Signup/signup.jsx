@@ -2,7 +2,7 @@ import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import NavBar from "../../../Content/nav";
 
-const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
+const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 class SignupForm extends React.Component {
   state = {

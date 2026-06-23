@@ -13,7 +13,7 @@ import Suites from "../Content/suites";
 import BookingChatbot from "./booking_chatbot";
 
 // Your Cloudflare Worker URL
-const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
+const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 class HotelBookingForm extends React.Component {
   constructor(props) {

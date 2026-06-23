@@ -33,24 +33,48 @@ const ensureBookingsTable = async (db) => {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS bookings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      Customers TEXT NOT NULL,
-      Email TEXT NOT NULL,
-      PhoneNumbers TEXT,
-      Hotels TEXT NOT NULL,
-      Amount TEXT,
-      Availibilty TEXT,
-      Departure TEXT,
-      Rooms INTEGER,
-      Suites TEXT,
-      Adult INTEGER,
-      Children INTEGER,
-      Payment TEXT,
+      customer TEXT,
+      email TEXT,
+      hotel TEXT NOT NULL,
+      check_in TEXT,
+      check_out TEXT,
+      children INTEGER DEFAULT 0,
+      adult INTEGER DEFAULT 0,
+      rooms INTEGER DEFAULT 1,
+      suite TEXT,
+      mobile_money TEXT,
+      amount TEXT,
+      payment_status TEXT NOT NULL DEFAULT 'pending',
       booking_status TEXT NOT NULL DEFAULT 'pending',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `).run();
-};
 
+  const existingColumns = await db.prepare('PRAGMA table_info(bookings)').all();
+  const columnNames = new Set((existingColumns.results || []).map((column) => column.name));
+  const requiredColumns = [
+    ['customer', 'TEXT'],
+    ['email', 'TEXT'],
+    ['hotel', 'TEXT'],
+    ['check_in', 'TEXT'],
+    ['check_out', 'TEXT'],
+    ['children', 'INTEGER DEFAULT 0'],
+    ['adult', 'INTEGER DEFAULT 0'],
+    ['rooms', 'INTEGER DEFAULT 1'],
+    ['suite', 'TEXT'],
+    ['mobile_money', 'TEXT'],
+    ['amount', 'TEXT'],
+    ['payment_status', "TEXT NOT NULL DEFAULT 'pending'"],
+    ['booking_status', "TEXT NOT NULL DEFAULT 'pending'"],
+    ['created_at', 'TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP'],
+  ];
+
+  for (const [name, definition] of requiredColumns) {
+    if (!columnNames.has(name)) {
+      await db.prepare(`ALTER TABLE bookings ADD COLUMN ${name} ${definition}`).run();
+    }
+  }
+};
 router.post('/', async (req, res) => {
   try {
     const {
@@ -114,25 +138,23 @@ router.post('/', async (req, res) => {
 
     const sql = `
       INSERT INTO bookings
-      (Customers, Email, PhoneNumbers, Hotels, Amount, Availibilty, Departure, Rooms, Suites, Adult, Children, Payment)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (customer, email, hotel, check_in, check_out, children, adult, rooms, suite, mobile_money, amount, payment_status, booking_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending')
     `;
 
     const statement = db.prepare(sql).bind(
       selectedCustomer,
       selectedEmail,
-      paymentNumber || Payment,
       selectedHotel,
-      hotelPayment,
       formatDate(checkIn || Availability),
       formatDate(checkOut || Departure),
+      children || Children || 0,
+      adult || Adult || 0,
       rooms || Rooms,
       suite || Suites,
-      adult || Adult,
-      children || Children,
+      paymentNumber || Payment,
       hotelPayment
     );
-
     const result = await statement.run();
 
     if (!result || !result.success) {

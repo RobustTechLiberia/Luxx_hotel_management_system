@@ -1,6 +1,6 @@
 import React from "react";
 
-const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
+const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 const quickPrompts = [
   "How do I book a room?",
