@@ -2,6 +2,8 @@ import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import NavBar from "../../../Content/nav";
 
+const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
+
 class SignupForm extends React.Component {
   state = {
     errors: {},
@@ -10,7 +12,7 @@ class SignupForm extends React.Component {
     redirectToBookingsHome: false,
   };
 
-  handleSubmit = (event) => {
+  handleSubmit = async (event) => {
     event.preventDefault();
     
     // Reset notification alerts on each new submission attempt
@@ -47,15 +49,40 @@ class SignupForm extends React.Component {
       return;
     }
 
-    // 2. Local-Only Success Authentication Handler
-    localStorage.setItem("token", "mock-local-signup-token-987xyz");
-    localStorage.setItem("username", fullName);
-    localStorage.setItem("email", email);
+    try {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          username: fullName,
+          email,
+          password,
+        }),
+      });
 
-    this.setState({
-      successMessage: "Account created successfully!",
-      redirectToBookingsHome: true,
-    });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || "Signup failed.");
+      }
+
+      localStorage.setItem("token", data.token || "");
+      localStorage.setItem("username", data.user?.username || fullName);
+      localStorage.setItem("email", data.user?.email || email);
+      localStorage.setItem("useremail", data.user?.email || email);
+
+      this.setState({
+        successMessage: "Account created successfully!",
+        redirectToBookingsHome: true,
+      });
+    } catch (error) {
+      this.setState({
+        apiError: error.message || "Could not create your account.",
+      });
+    }
   };
 
   getInputClass = (fieldName) =>

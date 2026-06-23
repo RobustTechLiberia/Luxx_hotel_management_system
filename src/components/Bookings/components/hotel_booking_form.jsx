@@ -70,7 +70,8 @@ class HotelBookingForm extends React.Component {
 
 
     const currentCustomerName = localStorage.getItem("username") || "Guest User";
-    const currentCustomerEmail = localStorage.getItem("useremail") || "guest@example.com";
+    const currentCustomerEmail =
+      localStorage.getItem("useremail") || localStorage.getItem("email") || "";
 
     // 3. Request Execution
     try {

@@ -2,6 +2,8 @@ import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import NavBar from "../../Content/nav";
 
+const API_BASE_URL = "https://luxx.gabrielwkun.workers.dev";
+
 class LoginForm extends React.Component {
   state = {
     redirectToBookingsHome: false,
@@ -9,8 +11,7 @@ class LoginForm extends React.Component {
     apiError: null,
   };
 
-  // REMOVED async here to prevent the state evaluation bug
-  handleSubmit = (event) => {
+  handleSubmit = async (event) => {
     event.preventDefault();
     
     // 1. Instantly clear out previous errors on submit click
@@ -41,20 +42,35 @@ class LoginForm extends React.Component {
       return;
     }
 
-    // 3. SECURE CREDENTIAL EVALUATION
-    if (email === "admin@example.com" && password === "password@123") {
-      localStorage.setItem("token", "mock-fallback-token-xyz123");
-      localStorage.setItem("username", "admin");
-      localStorage.setItem("email", email);
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || "Login failed.");
+      }
+
+      localStorage.setItem("token", data.token || "");
+      localStorage.setItem("username", data.user?.username || "");
+      localStorage.setItem("email", data.user?.email || email);
+      localStorage.setItem("useremail", data.user?.email || email);
 
       this.setState({
         apiError: null,
         errors: {},
         redirectToBookingsHome: true, // This triggers the redirect below
       });
-    } else {
+    } catch (error) {
       this.setState({
-        apiError: "Login failed. Invalid email or password.",
+        apiError: error.message || "Login failed. Invalid email or password.",
       });
     }
   };

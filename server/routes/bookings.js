@@ -11,26 +11,47 @@ const formatDate = (dateValue) => {
 };
 
 const normalizeHotelName = (hotelName) =>
-  hotelName.toString().trim().toLowerCase().replace(/\s+/g, " ");
+  hotelName.toString().trim().toLowerCase().replace(/\s+/g, ' ');
 
 const hotelPayments = {
-  "royal grand hotel": "$10",
-  "boluvard hotel": "$25",
-  "boluvard palace": "$25",
-  "sinkor palace": "$5",
-  "sinkor palace hotel": "$5",
-  "bella cassa": "$5",
-  "bella cassa hotel": "$5",
-  "bella casa hotel": "$5",
-  "fammington hotel": "$25",
-  "corona hotel": "$10",
+  'royal grand hotel': '$10',
+  'boluvard hotel': '$25',
+  'boluvard palace': '$25',
+  'sinkor palace': '$5',
+  'sinkor palace hotel': '$5',
+  'bella cassa': '$5',
+  'bella cassa hotel': '$5',
+  'bella casa hotel': '$5',
+  'fammington hotel': '$25',
+  'corona hotel': '$10',
 };
 
 const getHotelPayment = (hotelName) =>
   hotelPayments[normalizeHotelName(hotelName)] || null;
 
-// NOTE: Changed route string to "/" because it is mounted under "/bookings" in app.js
-router.post("/", async (req, res) => {
+const ensureBookingsTable = async (db) => {
+  await db.prepare(`
+    CREATE TABLE IF NOT EXISTS bookings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      Customers TEXT NOT NULL,
+      Email TEXT NOT NULL,
+      PhoneNumbers TEXT,
+      Hotels TEXT NOT NULL,
+      Amount TEXT,
+      Availibilty TEXT,
+      Departure TEXT,
+      Rooms INTEGER,
+      Suites TEXT,
+      Adult INTEGER,
+      Children INTEGER,
+      Payment TEXT,
+      booking_status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `).run();
+};
+
+router.post('/', async (req, res) => {
   try {
     const {
       customer = null,
@@ -60,13 +81,13 @@ router.post("/", async (req, res) => {
     const selectedEmail = email || Email;
 
     if (!selectedHotel) {
-      return res.status(400).json({ success: false, error: "Hotel name is required" });
+      return res.status(400).json({ success: false, error: 'Hotel name is required' });
     }
 
     if (!selectedCustomer || !selectedEmail) {
       return res.status(401).json({
         success: false,
-        error: "Please sign up or log in before placing a booking",
+        error: 'Please sign up or log in before placing a booking',
       });
     }
 
@@ -79,17 +100,17 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Extraction chain designed to dig into the cloudflare:node abstraction mapping layers
-    const env = req.env || req.rawHeaders?.env || globalThis.env;
-    const db = env?.DB;
+    const db = req.db || req.env?.HOTELS_DB || req.env?.DB;
 
     if (!db) {
       return res.status(500).json({
         success: false,
-        error: "D1 Initialization Reference Lost",
-        details: "The database binding context was not caught through the httpServerHandler pipeline."
+        error: 'D1 Initialization Reference Lost',
+        details: 'HOTELS_DB was not available on the Cloudflare Worker environment.'
       });
     }
+
+    await ensureBookingsTable(db);
 
     const sql = `
       INSERT INTO bookings
@@ -112,38 +133,37 @@ router.post("/", async (req, res) => {
       hotelPayment
     );
 
-    // Run query mutation 
     const result = await statement.run();
 
     if (!result || !result.success) {
-      throw new Error("D1 Engine rejected the storage instruction array payload.");
+      throw new Error('D1 rejected the booking insert.');
     }
 
     return res.status(201).json({
       success: true,
-      message: "Booking Successful",
+      message: 'Booking Successful',
       bookingId: result.meta?.last_row_id || null,
       payment: hotelPayment,
     });
 
   } catch (err) {
-    console.error("D1 transaction error:", err);
+    console.error('D1 transaction error:', err);
     return res.status(500).json({
       success: false,
-      error: "Database error processing mutation block",
+      error: 'Database error processing mutation block',
       details: err.message,
     });
   }
 });
 
-router.post("/hotel-click", (req, res) => {
+router.post('/hotel-click', (req, res) => {
   const { hotelName } = req.body;
   if (!hotelName) {
-    return res.status(400).json({ error: "Hotel name is required" });
+    return res.status(400).json({ error: 'Hotel name is required' });
   }
   return res.status(200).json({
     success: true,
-    message: "Hotel selected",
+    message: 'Hotel selected',
     hotelName,
   });
 });

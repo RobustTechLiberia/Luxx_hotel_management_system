@@ -1,22 +1,19 @@
 name = "luxx-hotel-api"
 main = "app.js"
 compatibility_date = "2026-06-17"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_flags = ["nodejs_compat"]
 
-assets = { directory = "./dist" }
-
-# Hyperdrive binding (rename to something unique)
+# Hyperdrive binding, kept for future MySQL use. The active app uses D1 below.
 [[hyperdrive]]
 binding = "LUXX_DB"
 id = "13305a353aae43bdb8f72410e746274c"
 
-# D1 database binding
+# D1 database binding used by server/app.js, routes/users.js, and routes/bookings.js
 [[d1_databases]]
 binding = "HOTELS_DB"
 database_name = "hotels"
 database_id = "9332ce4e-46b3-4889-8dbe-907e12277133"
 
-# KV namespace binding (example if you want KV too)
 [[kv_namespaces]]
 binding = "lux"
-"id": "15c9ed48cd044eda99402ab4d66b86b8"
+id = "15c9ed48cd044eda99402ab4d66b86b8"
