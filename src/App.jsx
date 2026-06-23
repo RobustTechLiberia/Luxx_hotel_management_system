@@ -37,6 +37,8 @@ import Invoice from "./components/Admin/Dashboard/pages/invoice";
 import Settings from "./components/Admin/Dashboard/pages/settings";
 import Logout from "./components/Admin/Dashboard/pages/logout";
 
+const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
+
 class App extends React.Component {
   state = {
     isLoading: true,

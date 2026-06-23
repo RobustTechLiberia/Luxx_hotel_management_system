@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faStar } from "@fortawesome/free-solid-svg-icons";
 
+const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
+
 import img1 from "../../../assets/images/Z (6).jpeg";
 import img2 from "../../../assets/images/9k= (9).jpeg";
 import img3 from "../../../assets/images/2Q== (12).jpeg";
@@ -68,7 +70,7 @@ class Discover extends React.Component {
 
   handleHotelClick = async (hotelName) => {
     try {
-      await fetch("http://localhost:8080/bookings/hotel-click", {
+      await fetch(`${API_BASE_URL}/bookings/hotel-click`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
