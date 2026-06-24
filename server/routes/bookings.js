@@ -1,5 +1,9 @@
-/* eslint-disable no-undef */
+﻿/* eslint-disable no-undef */
 import express from 'express';
+import {
+  buildBookingConfirmationEmail,
+  sendTransactionalEmail,
+} from '../utils/email.js';
 
 const router = express.Router();
 
@@ -75,6 +79,7 @@ const ensureBookingsTable = async (db) => {
     }
   }
 };
+
 router.post('/', async (req, res) => {
   try {
     const {
@@ -130,11 +135,25 @@ router.post('/', async (req, res) => {
       return res.status(500).json({
         success: false,
         error: 'D1 Initialization Reference Lost',
-        details: 'HOTELS_DB was not available on the Cloudflare Worker environment.'
+        details: 'HOTELS_DB was not available on the Cloudflare Worker environment.',
       });
     }
 
     await ensureBookingsTable(db);
+
+    const booking = {
+      customer: selectedCustomer,
+      email: selectedEmail,
+      hotel: selectedHotel,
+      checkIn: formatDate(checkIn || Availability),
+      checkOut: formatDate(checkOut || Departure),
+      children: children || Children || 0,
+      adult: adult || Adult || 0,
+      rooms: rooms || Rooms || 1,
+      suite: suite || Suites || '',
+      mobileMoney: paymentNumber || Payment || '',
+      amount: hotelPayment,
+    };
 
     const sql = `
       INSERT INTO bookings
@@ -142,32 +161,50 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending')
     `;
 
-    const statement = db.prepare(sql).bind(
-      selectedCustomer,
-      selectedEmail,
-      selectedHotel,
-      formatDate(checkIn || Availability),
-      formatDate(checkOut || Departure),
-      children || Children || 0,
-      adult || Adult || 0,
-      rooms || Rooms,
-      suite || Suites,
-      paymentNumber || Payment,
-      hotelPayment
-    );
-    const result = await statement.run();
+    const result = await db.prepare(sql).bind(
+      booking.customer,
+      booking.email,
+      booking.hotel,
+      booking.checkIn,
+      booking.checkOut,
+      booking.children,
+      booking.adult,
+      booking.rooms,
+      booking.suite,
+      booking.mobileMoney,
+      booking.amount,
+    ).run();
 
     if (!result || !result.success) {
       throw new Error('D1 rejected the booking insert.');
     }
 
+    const bookingId = result.meta?.last_row_id || null;
+    let emailResult = { sent: false, provider: null };
+    let emailError = null;
+
+    try {
+      const confirmation = buildBookingConfirmationEmail({ ...booking, bookingId });
+      emailResult = await sendTransactionalEmail(req.env || {}, {
+        to: booking.email,
+        ...confirmation,
+      });
+    } catch (err) {
+      emailError = err.message;
+      console.error('Booking confirmation email error:', err);
+    }
+
     return res.status(201).json({
       success: true,
-      message: 'Booking Successful',
-      bookingId: result.meta?.last_row_id || null,
+      message: emailResult.sent
+        ? 'Booking Successful. Confirmation email sent.'
+        : 'Booking Successful. Confirmation email could not be sent.',
+      bookingId,
       payment: hotelPayment,
+      emailSent: emailResult.sent,
+      emailProvider: emailResult.provider,
+      emailError,
     });
-
   } catch (err) {
     console.error('D1 transaction error:', err);
     return res.status(500).json({

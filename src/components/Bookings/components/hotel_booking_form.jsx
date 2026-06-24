@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,6 +11,7 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import { API_BASE_URL } from "../../../config/api";
 import Suites from "../Content/suites";
+import { BookingExtras, PricePrediction } from "../../Features/PremiumFeatures";
 
 // Your Cloudflare Worker URL
 
@@ -318,4 +319,5 @@ class HotelBookingForm extends React.Component {
 }
 
 export default HotelBookingForm;
+
 
