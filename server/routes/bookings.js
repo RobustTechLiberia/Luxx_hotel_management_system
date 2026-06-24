@@ -132,10 +132,17 @@ router.post('/', async (req, res) => {
     const db = req.db || req.env?.HOTELS_DB || req.env?.DB;
 
     if (!db) {
+      console.error('ERROR: D1 Database binding not found', {
+        'req.db': !!req.db,
+        'req.env': !!req.env,
+        'req.env?.HOTELS_DB': !!req.env?.HOTELS_DB,
+        'req.env?.DB': !!req.env?.DB,
+        env_keys: req.env ? Object.keys(req.env) : 'NO ENV'
+      });
       return res.status(500).json({
         success: false,
         error: 'D1 Initialization Reference Lost',
-        details: 'HOTELS_DB was not available on the Cloudflare Worker environment.',
+        details: 'HOTELS_DB was not available on the Cloudflare Worker environment. Check wrangler.toml D1 binding configuration.',
       });
     }
 
@@ -161,6 +168,8 @@ router.post('/', async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'pending')
     `;
 
+    console.log('Attempting booking insert with:', { booking, sql });
+
     const result = await db.prepare(sql).bind(
       booking.customer,
       booking.email,
@@ -175,8 +184,10 @@ router.post('/', async (req, res) => {
       booking.amount,
     ).run();
 
+    console.log('D1 insertion result:', { success: result?.success, meta: result?.meta });
+
     if (!result || !result.success) {
-      throw new Error('D1 rejected the booking insert.');
+      throw new Error(`D1 rejected the booking insert: ${JSON.stringify(result)}`);
     }
 
     const bookingId = result.meta?.last_row_id || null;

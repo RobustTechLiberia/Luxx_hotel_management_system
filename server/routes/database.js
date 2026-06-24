@@ -237,6 +237,17 @@ router.post('/chat', async (req, res) => {
 });
 
 router.post('/api/users/register', async (req, res) => {
+  // NOTE: This endpoint is DEPRECATED. Use the one in routes/users.js instead.
+  // That endpoint uses D1 (SQLite) which is the active database binding.
+  return res.status(410).json({ 
+    success: false, 
+    error: "This endpoint is deprecated. Use POST /signup instead.",
+    note: "The active registration endpoint is in routes/users.js and uses D1 database."
+  });
+});
+
+/*
+router.post('/api/users/register', async (req, res) => {
   const { username, email, password } = req.body;
   
   if (!username || !email || !password) {
@@ -357,5 +368,6 @@ router.patch('/api/bookings/:id/status', async (req, res) => {
     if (connection) await connection.end();
   }
 });
+*/
 
 export default router;

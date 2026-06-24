@@ -37,10 +37,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, _res, next) => {
-  const env = req.raw?.env || req.env || globalThis.__LUXX_ENV;
+  // Properly retrieve the Cloudflare environment
+  // Priority: req.env (set by fetch handler) > req.raw.env > globalThis.__LUXX_ENV
+  const env = req.env || globalThis.__LUXX_ENV;
+
+  if (!env) {
+    console.warn('Warning: Cloudflare env not available on request');
+  }
 
   req.env = env;
-  req.db = env?.HOTELS_DB || env?.DB;
+  req.db = env?.HOTELS_DB;
   req.JWT_SECRET = env?.JWT_SECRET || 'luxx-development-secret-change-me';
 
   next();
@@ -50,6 +56,26 @@ app.use('/', usersRouter);
 app.use('/', dbRouter);
 app.use('/bookings', bookingsRouter);
 app.use('/email', emailRouter);
+
+// Debug endpoint to check database connection
+app.get('/health', (req, res) => {
+  const hasDb = !!req.db;
+  const hasEnv = !!req.env;
+  const dbType = req.db?.constructor?.name || 'unknown';
+  
+  return res.status(hasDb ? 200 : 500).json({
+    status: hasDb ? 'healthy' : 'unhealthy',
+    database: {
+      available: hasDb,
+      type: dbType,
+      binding: 'HOTELS_DB'
+    },
+    environment: {
+      available: hasEnv,
+      envKeys: hasEnv ? Object.keys(req.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')) : []
+    }
+  });
+});
 
 app.get('/home', (req, res) => {
   res.send('hello,world');
@@ -64,9 +90,11 @@ const handler = httpServerHandler(server);
 
 export default {
   async fetch(request, env, ctx) {
+    // Attach Cloudflare environment to the request so middleware can access it
     globalThis.__LUXX_ENV = env;
-    request.env = env; 
+    request.env = env;
     request.ctx = ctx;
+    
     return handler.fetch(request, env, ctx);
   }
 };
