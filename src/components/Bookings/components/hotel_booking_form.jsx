@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -11,7 +11,6 @@ import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
 import { API_BASE_URL } from "../../../config/api";
 import Suites from "../Content/suites";
-import { BookingExtras, PricePrediction } from "../../Features/PremiumFeatures";
 
 // Your Cloudflare Worker URL
 
@@ -31,6 +30,7 @@ class HotelBookingForm extends React.Component {
       error: "",
       success: false,
       isLoading: false,
+      emailWarning: '',
     };
   }
 
@@ -52,21 +52,21 @@ class HotelBookingForm extends React.Component {
     } = this.state;
 
     if (!checkIn || !checkOut) {
-      this.setState({ error: "Please select both check-in and check-out dates.", success: false });
+      this.setState({ error: "Please select both check-in and check-out dates.", success: false, emailWarning: "" });
       return;
     }
 
     if (!rooms || parseInt(rooms, 10) <= 0) {
-      this.setState({ error: "Please specify at least 1 room to book.", success: false });
+      this.setState({ error: "Please specify at least 1 room to book.", success: false, emailWarning: "" });
       return;
     }
 
     if (!paymentNumber.trim()) {
-      this.setState({ error: "Please enter your Orange Money phone number.", success: false });
+      this.setState({ error: "Please enter your Orange Money phone number.", success: false, emailWarning: "" });
       return;
     }
 
-    this.setState({ isLoading: true, error: "" });
+    this.setState({ isLoading: true, error: "", emailWarning: "" });
 
     const currentCustomerName = localStorage.getItem("username") || "Guest User";
     const currentCustomerEmail =
@@ -111,6 +111,7 @@ class HotelBookingForm extends React.Component {
           error: "",
           success: true,
           isLoading: false,
+          emailWarning: data.emailSent ? '' : (data.emailError || 'Booking saved, but the confirmation email was not sent.'),
         },
         () => {
           setTimeout(() => {
@@ -123,6 +124,7 @@ class HotelBookingForm extends React.Component {
         error: err.message || "Could not complete the booking network request.",
         success: false,
         isLoading: false,
+        emailWarning: '',
       });
     }
   };
@@ -294,7 +296,10 @@ class HotelBookingForm extends React.Component {
                     <div className="mx-3 py-3 md:mx-3">
                       {this.state.error && <p className="mb-3 text-sm text-red-600">{this.state.error}</p>}
                       {this.state.success && (
-                        <p className="mb-3 text-sm text-green-700">Booking registered! Forwarding to processing stack...</p>
+                        <p className="mb-3 text-sm text-green-700">Booking registered! Confirmation details are being processed.</p>
+                      )}
+                      {this.state.emailWarning && (
+                        <p className="mb-3 text-sm text-amber-700">{this.state.emailWarning}</p>
                       )}
                       <button
                         type="submit"
@@ -319,5 +324,7 @@ class HotelBookingForm extends React.Component {
 }
 
 export default HotelBookingForm;
+
+
 
 

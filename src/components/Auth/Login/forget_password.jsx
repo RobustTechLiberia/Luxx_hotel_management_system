@@ -1,17 +1,20 @@
 import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import NavBar from "../../Content/nav";
+import { API_BASE_URL } from "../../../config/api";
 
 class ForgotPassword extends React.Component {
   state = {
     redirectToTwoFactor: false,
     errors: {},
+    apiError: "",
+    isLoading: false,
   };
 
-  handleSubmit = (event) => {
+  handleSubmit = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email")?.toString().trim() || "";
+    const email = formData.get("email")?.toString().trim().toLowerCase() || "";
     const errors = {};
 
     if (!email) {
@@ -21,11 +24,35 @@ class ForgotPassword extends React.Component {
     }
 
     if (Object.keys(errors).length > 0) {
-      this.setState({ errors });
+      this.setState({ errors, apiError: "" });
       return;
     }
 
-    this.setState({ errors: {}, redirectToTwoFactor: true });
+    this.setState({ errors: {}, apiError: "", isLoading: true });
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/forgot-password/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || "Could not send verification code.");
+      }
+
+      sessionStorage.setItem("passwordResetEmail", email);
+      this.setState({ redirectToTwoFactor: true, isLoading: false });
+    } catch (error) {
+      this.setState({
+        apiError: error.message || "Could not send verification code.",
+        isLoading: false,
+      });
+    }
   };
 
   getInputClass = (fieldName) =>
@@ -65,6 +92,11 @@ class ForgotPassword extends React.Component {
                 {this.state.errors.email && (
                   <p className="text-sm text-red-500">{this.state.errors.email}</p>
                 )}
+                {this.state.apiError && (
+                  <p className="text-sm text-red-500 bg-red-50 p-2 border border-red-200">
+                    {this.state.apiError}
+                  </p>
+                )}
                 <p className="text-left font-sans text-md font-normal">
                   Remember your password?
                   <Link to="/login" className="mx-2 text-blue-700">
@@ -73,9 +105,12 @@ class ForgotPassword extends React.Component {
                 </p>
                 <button
                   type="submit"
-                  className="w-full cursor-pointer rounded-none border-none bg-blue-700 px-6 py-3 text-base font-medium capitalize text-white sm:w-auto"
+                  disabled={this.state.isLoading}
+                  className={`w-full cursor-pointer rounded-none border-none px-6 py-3 text-base font-medium capitalize text-white sm:w-auto ${
+                    this.state.isLoading ? "bg-gray-400" : "bg-blue-700"
+                  }`}
                 >
-                  continue
+                  {this.state.isLoading ? "sending..." : "continue"}
                 </button>
               </div>
             </form>
