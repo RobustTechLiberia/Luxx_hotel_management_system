@@ -1,8 +1,8 @@
 import React from "react";
 import { Link, Navigate } from "react-router-dom";
 import NavBar from "../../../Content/nav";
+import { API_BASE_URL } from "../../../../config/api";
 
-const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 class SignupForm extends React.Component {
   state = {
@@ -196,3 +196,4 @@ class SignupForm extends React.Component {
 }
 
 export default SignupForm;
+

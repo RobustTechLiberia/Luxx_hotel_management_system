@@ -22,7 +22,9 @@ app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     const isAllowedWorkerOrigin = origin.startsWith('https://') && origin.endsWith('.gabrielwkun.workers.dev');
-    if (allowedOrigins.indexOf(origin) !== -1 || isAllowedWorkerOrigin) {
+    const isAllowedGitHubPages = origin.startsWith('https://') && (origin.endsWith('.github.io') || origin.endsWith('.pages.dev'));
+    const isAllowedLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    if (allowedOrigins.indexOf(origin) !== -1 || isAllowedWorkerOrigin || isAllowedGitHubPages || isAllowedLocalhost) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

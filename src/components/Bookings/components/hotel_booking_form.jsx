@@ -9,11 +9,10 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "react-datepicker";
 import NavBar from "../Content/nav";
+import { API_BASE_URL } from "../../../config/api";
 import Suites from "../Content/suites";
-import BookingChatbot from "./booking_chatbot";
 
 // Your Cloudflare Worker URL
-const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 class HotelBookingForm extends React.Component {
   constructor(props) {
@@ -312,7 +311,6 @@ class HotelBookingForm extends React.Component {
             </div>
           </div>
         </div>
-        <BookingChatbot hotelName={hotelName} />
         <Suites />
       </>
     );
@@ -320,3 +318,4 @@ class HotelBookingForm extends React.Component {
 }
 
 export default HotelBookingForm;
+

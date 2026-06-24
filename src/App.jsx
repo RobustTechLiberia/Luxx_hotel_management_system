@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import PageLoader from "./components/page_loader";
 import HomePage from "./pages/home";
@@ -36,8 +36,15 @@ import Billing from "./components/Admin/Dashboard/pages/billing";
 import Invoice from "./components/Admin/Dashboard/pages/invoice";
 import Settings from "./components/Admin/Dashboard/pages/settings";
 import Logout from "./components/Admin/Dashboard/pages/logout";
+import BookingChatbot from "./components/Bookings/components/booking_chatbot";
+const hiddenChatRoutes = ["/admin", "/login", "/signup", "/two-factor-auth", "/forget-password"];
 
-const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
+function CustomerBookingChatbot() {
+  const location = useLocation();
+  const shouldHide = hiddenChatRoutes.some((path) => location.pathname.startsWith(path));
+
+  return shouldHide ? null : <BookingChatbot />;
+}
 
 class App extends React.Component {
   state = {
@@ -145,9 +152,13 @@ class App extends React.Component {
           />
           <Route path="/bookings/submission" element={<FormSubmission />} />
         </Routes>
+                <CustomerBookingChatbot />
       </div>
     );
   }
 }
 
 export default App;
+
+
+

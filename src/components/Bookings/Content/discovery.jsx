@@ -2,8 +2,8 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFilter, faStar } from "@fortawesome/free-solid-svg-icons";
+import { API_BASE_URL } from "../../../config/api";
 
-const API_BASE_URL = "https://luxx-hotel-api.gabrielwkun.workers.dev";
 
 import img1 from "../../../assets/images/Z (6).jpeg";
 import img2 from "../../../assets/images/9k= (9).jpeg";
