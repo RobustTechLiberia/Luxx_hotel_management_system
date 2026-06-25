@@ -42,7 +42,7 @@ class BoluvardHotelSection extends React.Component{
                       <div className="w-full max-w-lg bg-white">
                         <div className="mx-auto h-auto w-full border-none bg-white px-1 md:mx-5 md:h-96 md:w-96 md:px-0 md:shadow-none">
                           <h1 className="text-left font-sans text-2xl capitalize font-semibold  my-2">
-                            boluvard hotel
+                            boulevard hotel
                           </h1>
                           <p className="text-left font-sans py-3  text-sm capitalize">
                             <FontAwesomeIcon
