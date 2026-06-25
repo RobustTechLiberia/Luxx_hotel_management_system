@@ -22,7 +22,7 @@
     "apexcharts": "^3.46.0",
     "axios": "^1.15.0",
     "body-parser": "^2.2.2",
-    "flowbite": "^4.0.1",
+    "flowbite": "^4.0.2",
     "jquery": "^4.0.0",
     "react": "^19.2.4",
     "react-datepicker": "^9.1.0",
