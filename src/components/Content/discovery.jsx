@@ -333,7 +333,7 @@ class Discover extends React.Component {
                 <Link to="/fammington-hotel">fammington hotel</Link> <br />
                 <ul className="display inline-flex flex-nowrap justify-evenly gap-5">
                   <li className="font-sans text-sm font-normal">
-                    margibi county
+                    Fammington River Roberts Field
                   </li>
                   <li className="font-sans text-sm font-normal">
                     $5 per night   
