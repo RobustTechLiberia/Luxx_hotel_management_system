@@ -7,6 +7,8 @@ import usersRouter from './routes/users.js';
 import bookingsRouter from './routes/bookings.js';
 import dbRouter from './routes/database.js';
 import emailRouter from './routes/email.js';
+import hotelsRouter from './routes/hotels.js';
+
 
 const app = express();
 
@@ -56,6 +58,8 @@ app.use('/', usersRouter);
 app.use('/', dbRouter);
 app.use('/bookings', bookingsRouter);
 app.use('/email', emailRouter);
+app.use('/', hotelsRouter);
+
 
 // Debug endpoint to check database connection
 app.get('/health', (req, res) => {
