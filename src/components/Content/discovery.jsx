@@ -50,7 +50,7 @@ class Discover extends React.Component {
                 <br />
                 <ul className="display inline-flex flex-nowrap justify-evenly gap-5">
                   <li className="font-sans text-sm font-normal">
-                    12 street, sinkor
+                    15 street, sinkor
                   </li>
                   <li className="font-sans text-sm font-normal">
                     $5 per night
