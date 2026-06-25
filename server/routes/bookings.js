@@ -55,7 +55,8 @@ const ensureBookingsTable = async (db) => {
   `).run();
 
   const existingColumns = await db.prepare('PRAGMA table_info(bookings)').all();
-  const columnNames = new Set((existingColumns.results || []).map((column) => column.name));
+  const columns = existingColumns?.results || existingColumns || [];
+  const columnNames = new Set(columns.map((column) => column.name));
   const requiredColumns = [
     ['customer', 'TEXT'],
     ['email', 'TEXT'],
@@ -129,15 +130,18 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const db = req.db || req.env?.HOTELS_DB || req.env?.DB;
+    const env = req.env || req.raw?.env || globalThis.__LUXX_ENV || {};
+    const db = req.db
+      || env?.HOTELS_DB
+      || env?.DB;
 
     if (!db) {
       console.error('ERROR: D1 Database binding not found', {
         'req.db': !!req.db,
         'req.env': !!req.env,
-        'req.env?.HOTELS_DB': !!req.env?.HOTELS_DB,
-        'req.env?.DB': !!req.env?.DB,
-        env_keys: req.env ? Object.keys(req.env) : 'NO ENV'
+        'req.raw?.env': !!req.raw?.env,
+        'globalThis.__LUXX_ENV': !!globalThis.__LUXX_ENV,
+        'env_keys': env ? Object.keys(env).filter((k) => !k.includes('SECRET') && !k.includes('KEY')) : 'NO ENV'
       });
       return res.status(500).json({
         success: false,

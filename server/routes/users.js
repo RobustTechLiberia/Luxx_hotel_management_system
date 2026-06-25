@@ -44,8 +44,9 @@ const ensurePasswordResetTable = async (db) => {
 const normalizeEmail = (email = '') => String(email).trim().toLowerCase();
 
 const getDbAndSecret = (req) => {
-  const db = req.db;
-  const JWT_SECRET = req.JWT_SECRET;
+  const env = req.env || req.raw?.env || globalThis.__LUXX_ENV || {};
+  const db = req.db || env.HOTELS_DB || env.DB;
+  const JWT_SECRET = req.JWT_SECRET || env.JWT_SECRET || 'luxx-development-secret-change-me';
 
   if (!db) {
     throw new Error('Cloudflare D1 binding HOTELS_DB was not found. Check server/wrangler.toml.');
