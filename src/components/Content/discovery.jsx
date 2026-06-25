@@ -6,7 +6,7 @@ import img1 from "../../assets/images/Z (6).jpeg";
 
 class Discover extends React.Component {
   state = {
-    sort: 'price_asc', // price_asc | price_desc
+    sort: "price_asc", // price_asc | price_desc
     hotels: [],
     loading: false,
     error: null,
@@ -17,43 +17,39 @@ class Discover extends React.Component {
   }
 
   async loadHotels() {
-    const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || null;
-    // project already has src/config/api.js with API_BASE_URL; to avoid circular deps,
-    // we’ll just call same-origin relative endpoint.
-    // If you prefer, we can import it later.
+    const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || "";
 
     this.setState({ loading: true, error: null });
 
     try {
-      const url = `/api/hotels?sort=${encodeURIComponent(this.state.sort)}`;
-      const resp = await fetch(url, { credentials: 'include' });
+      const url = `${API_BASE_URL}/api/hotels?sort=${encodeURIComponent(this.state.sort)}`;
+      const resp = await fetch(url, { credentials: "include" });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Failed to load hotels');
-      }
+      const data = await resp.json();
+      if (!data?.success) throw new Error(data?.error || "Failed to load hotels");
 
       this.setState({ hotels: data.hotels || [], loading: false });
     } catch (e) {
-      this.setState({ error: e.message || String(e), loading: false });
+      this.setState({ error: e?.message || String(e), loading: false });
     }
   }
 
-  onSortChange = async (e) => {
-    const v = String(e.target.value || 'Prices');
-    const nextSort = v === 'High' ? 'price_desc' : v === 'Lowest' ? 'price_asc' : 'price_asc';
+  onSortChange = (e) => {
+    const v = String(e.target.value || "Prices");
+    const nextSort = v === "High" ? "price_desc" : v === "Lowest" ? "price_asc" : "price_asc";
     this.setState({ sort: nextSort }, () => this.loadHotels());
   };
 
   renderStars() {
-    // Keep UI consistent with existing cards; if you store rating in DB later,
-    // we can replace this with dynamic stars.
     return (
       <div className="flex flex-wrap justify-start gap-0 bg-white">
         {Array.from({ length: 4 }).map((_, idx) => (
           <div className="w-auto" key={idx}>
-            <FontAwesomeIcon icon={faStar} className="text-lg mx-0 text-amber-500" />
+            <FontAwesomeIcon
+              icon={faStar}
+              className="text-lg mx-0 text-amber-500"
+            />
           </div>
         ))}
       </div>
@@ -61,36 +57,50 @@ class Discover extends React.Component {
   }
 
   renderHotelCard = (hotel, idx) => {
-    const hotelName = hotel.hotelName || hotel.hotel_name || hotel.name || hotel.Hotel || `hotel-${idx}`;
-    const priceNumber = hotel.priceNumber ?? hotel.price ?? null;
-    const priceText = priceNumber != null && priceNumber !== '' ? `$${priceNumber} per night` : '';
+    const hotelName =
+      hotel.hotelName ||
+      hotel.hotel_name ||
+      hotel.name ||
+      hotel.Hotel ||
+      `hotel-${idx}`;
 
+    const priceNumber = hotel.priceNumber ?? hotel.price ?? null;
+    const priceText =
+      priceNumber != null && priceNumber !== ""
+        ? `$${priceNumber} per night`
+        : "";
 
     const imageUrl = hotel.imageUrl || hotel.image_url || null;
 
-    // NOTE: routes in your app are fixed; if DB hotel names don’t match route slugs,
-    // we can add a column like `route_path` in hotelsdetail.
     const pathMap = {
-      'royal grand hotel': '/royal-grand-hotel',
-      'corona hotel': '/corona-hotel',
-      'boluvard palace': '/boluvard-palace',
-      'bella casa hotel': '/bella-casa-hotel',
-      'bella casa': '/bella-casa-hotel',
-      'sinkor palace hotel': '/sinkor-palace-hotel',
-      'fammington hotel': '/fammington-hotel',
-      'boluvard hotel': '/boluvard-palace',
+      "royal grand hotel": "/royal-grand-hotel",
+      "corona hotel": "/corona-hotel",
+      "boluvard palace": "/boluvard-palace",
+      "bella casa hotel": "/bella-casa-hotel",
+      "bella casa": "/bella-casa-hotel",
+      "sinkor palace hotel": "/sinkor-palace-hotel",
+      "fammington hotel": "/fammington-hotel",
+      "boluvard hotel": "/boluvard-palace",
     };
 
     const normalized = String(hotelName).trim().toLowerCase();
-    const to = pathMap[normalized] || '/';
+    const to = pathMap[normalized] || "/";
 
     return (
       <div className="bg-white w-full h-auto" key={hotel.id || hotelName || idx}>
         <div className="w-auto h-auto">
           {imageUrl ? (
-            <img src={imageUrl} alt={hotelName} className="object-cover w-full h-52 sm:h-56 md:h-60" />
+            <img
+              src={imageUrl}
+              alt={hotelName}
+              className="object-cover w-full h-52 sm:h-56 md:h-60"
+            />
           ) : (
-            <img src={img1} alt={hotelName} className="object-cover w-full h-52 sm:h-56 md:h-60" />
+            <img
+              src={img1}
+              alt={hotelName}
+              className="object-cover w-full h-52 sm:h-56 md:h-60"
+            />
           )}
         </div>
 
@@ -109,7 +119,7 @@ class Discover extends React.Component {
   };
 
   render() {
-    const { hotels, loading, error } = this.state;
+    const { hotels, loading, error, sort } = this.state;
 
     return (
       <>
@@ -129,7 +139,7 @@ class Discover extends React.Component {
                     id="option"
                     className="border-none"
                     onChange={this.onSortChange}
-                    value={this.state.sort === 'price_desc' ? 'High' : 'Lowest'}
+                    value={sort === "price_desc" ? "High" : "Lowest"}
                   >
                     <option value="Prices">Sort prices</option>
                     <option value="High">High</option>
@@ -141,7 +151,9 @@ class Discover extends React.Component {
           </div>
 
           {loading && <div className="py-10 text-center">Loading hotels...</div>}
-          {error && <div className="py-10 text-center text-red-500">{error}</div>}
+          {error && (
+            <div className="py-10 text-center text-red-500">{error}</div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
             {hotels.map(this.renderHotelCard)}
