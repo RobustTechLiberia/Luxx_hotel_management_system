@@ -149,10 +149,10 @@ class Discover extends React.Component {
                 className="object-cover w-full h-52 sm:h-56 md:h-60"
               />
               <p className="text-lg py-5 font-sans text-left capitalize mx-0 font-medium">
-                <Link to="/boluvard-palace">boluvard palace</Link> <br />
+                <Link to="/boluvard-palace">boulevard palace</Link> <br />
                 <ul className="display inline-flex flex-nowrap justify-evenly gap-5">
                   <li className="font-sans text-sm font-normal">
-                    12 street, sinkor
+                    13 street, sinkor
                   </li>
                   <li className="font-sans text-sm font-normal">
                     $10 per night
